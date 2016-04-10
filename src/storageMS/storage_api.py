@@ -56,7 +56,7 @@ def get_neighbouring_nodes(vertice, **kwargs):
     pass
 
 
-def get_all_nodes(**kwargs):
+def get_nodes(**kwargs):
     """
     recieves a list of *properties*
     list of *labels*
@@ -64,5 +64,25 @@ def get_all_nodes(**kwargs):
     and a *groupby* variable
     which represents the key by which returned nodes should be grouped
     by default - the key is relationship
-    """
+        """
+    pass
+
+
+def get_edges():
+    pass
+
+
+def add_node():
+    pass
+
+
+def add_edge():
+    pass
+
+
+def delete_node():
+    pass
+
+
+def delete_edge():
     pass
