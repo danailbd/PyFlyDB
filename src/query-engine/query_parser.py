@@ -2,25 +2,35 @@ import re
 import collections
 import itertools
 
+'''
+- split to clauses  (Match)
+- split to sub-query (Where) -> Clause, expr, Cluase, expr ...
+- Parse expression by clause
+
+
+new MatchClause()
+'''
+
+
 
 def split_list(unsplitted, sep_list, PN=False):
     """
     Splits a string by list of separators
 
-        Unary prefix by default.
-        """
-        def apply_notation(splitted_list, splitter):
-            # TODO splitter may provide type of the notation (infix, postfix, suffix)
-            if PN:
-                # Binary operators - in_fix
-                for split_pos in range(0, len(splitted_list), 3):
-                    splitted_list.insert(split_pos, splitter)
-            else:
-                # unary operators - prefix
-                for split_pos in range(1, len(splitted_list)):
-                    splitted_list.insert(split_pos, splitter)
-                    if not unsplitted or len(sep_list) == 0:
-                        return unsplitted
+    Unary prefix by default.
+    """
+    def apply_notation(splitted_list, splitter):
+        # TODO splitter may provide type of the notation (infix, postfix, suffix)
+        if PN:
+            # Binary operators - in_fix
+            for split_pos in range(0, len(splitted_list), 3):
+                splitted_list.insert(split_pos, splitter)
+        else:
+            # unary operators - prefix
+            for split_pos in range(1, len(splitted_list)):
+                splitted_list.insert(split_pos, splitter)
+                if not unsplitted or len(sep_list) == 0:
+                    return unsplitted
 
     splitter = sep_list[0]
     rest = sep_list[1:]
@@ -41,89 +51,31 @@ def split_list(unsplitted, sep_list, PN=False):
     return split_list(unsplitted, rest)
 
 
-class InvalidSyntaxError(Exception):
-    pass
-
-
-class Command:
-
-    """ Defines a basic command for the db (MATCH, WHERE, ...) """
-
-    def __init__(self, clause, expression):
-        """TODO: to be defined1.
-
-        Args:
-            clause (Clause): TODO
-            expression (Expression): TODO
-
-
-        """
-        self._clause = clause
-        self._expression = expression
-        
- 
-class SubQuery:
-
-    """Docstring for QueryModel. """
-
-    def __init__(self, commands)
-        """TODO: to be defined1.
-
-        Args:
-            commands (List[Command]):
-        """
-        self._commands = commands
-               
-
-class Query:
-
-    """Docstring for Query. """
-
-    def __init__(self, queries):
-        """
-        Defines a whole query.
-
-        Args:
-            queries (List[SubQuery]):
-        """
-        self._queries = queries
-        
-
-
-def sytax_check(query):
-    '''
-    TODO
-    Some big regex to check for proper syntax
-    '''
-    pass
-
-
-
 MAIN_CLAUSES = [
-    'MATCH',
-    'MERGE',
-    # This matches or creates semantics by using
-    # indexes and locks. You can specify different
-    # operations in case of a MATCH (part of the
-    #     pattern already existed) or on CREATE
-    # (pattern did not exist yet).
+        'MATCH',
+        'MERGE',
+        # This matches or creates semantics by using
+        # indexes and locks. You can specify different
+        # operations in case of a MATCH (part of the
+        #     pattern already existed) or on CREATE
+        # (pattern did not exist yet).
 
-    'CREATE UNIQUE',
-    'CREATE',
-    'SET',     # This updates properties and labels on nodes
-    'REMOVE',  # +and/or relationships.
-    'DELETE',   # It deletes nodes and relationships
+        'CREATE UNIQUE',
+        'CREATE',
+        'SET',     # This updates properties and labels on nodes
+        'REMOVE',  # +and/or relationships.
+        'DELETE',   # It deletes nodes and relationships
 
-    'PROFILE',
-]
+        'PROFILE',
+        ]
 
 SUB_CLAUSES = [
-    'RETURN',
-    'WHERE',
-    'WITH',
-    'DISTINCT',
-    'ORDER BY'
-]
+        'RETURN',
+        'WHERE',
+        'WITH',
+        'DISTINCT',
+        'ORDER BY'
+        ]
 
 # -- EXPRESSIONS --
 
@@ -133,18 +85,10 @@ MULTI_ELEMENTS_SPLITTER = [',']
 
 OPERATORS_BY_PRIORITY = ['OR', 'XOR', 'AND', 'OR', '>', '<', '<=', '>=', 'IN']
 ops = {
-    'or': Operator('or', lambda a, b: a || b)
-}
+        'or': Operator('or', lambda a, b: a || b)
+        }
 
 COMMANDS = {}
-
-
-class NumberOfOperandsError(Exception):
-    pass
-
-class InvalidOperationError(Exception):
-    pass
-
 
 class Literal(object):
 
@@ -171,21 +115,6 @@ class Identifier:
     @property
     def value(self):
         return self._value
-
-
-class Operator:
-    def __init__(self, op, processor, operands=0):
-        self.operation = op
-        self.priority = priority
-        self.processor = processor
-        self.operands = operands
-
-    def execute(*args):
-        '''
-        Pass the required number of operands to the
-            operator
-        '''
-        return self.processor(*args)
 
 
 class Expression:
@@ -277,6 +206,8 @@ class ReturnNode(Node):
         self.__id = _id
 
 
+
+
 class QueryParser:
     """
     Creates a Query object out of a query string.
@@ -284,24 +215,6 @@ class QueryParser:
 
     @staticmethod
     def parse_query(query):
-        def __get_properties(node_string):
-                """
-                {name: "Emu", ..} - dict use eval
-                returns prop dict or None
-                """
-                properties_string = re.search('\{.*\}', node_string)
-                return eval(properties_string) if properties_string else None
-
-        def __get_labels(node_string):
-            """
-            varName:Label1:Label2:...
-            returns {
-            varName: ...,
-            labels: []
-            } or None
-            """
-            varibalbe_str = re.search('[^(]\w*(\)|\{))]', node_string)
-            return varibalbe_str.group(0).split(':') if varibalbe_str else None
 
         def __parse_node(node_string):
             """
@@ -309,9 +222,28 @@ class QueryParser:
 
             Do paring of string to node data and
             return Node Object
-        """
-        properties = __get_properties(node_string)
-        labels = __get_labels(__parse_node)
+       """
+            def __get_properties(node_string):
+                """
+                    {name: "Emu", ..} - dict use eval
+                    returns prop dict or None
+                    """
+                    properties_string = re.search('\{.*\}', node_string)
+                    return eval(properties_string) if properties_string else None
+
+            def __get_labels(node_string):
+                """
+                varName:Label1:Label2:...
+                returns {
+                varName: ...,
+                labels: []
+                } or None
+                """
+            properties = __get_properties(node_string)
+            labels = __get_labels(__parse_node)
+
+            varibalbe_str = re.search('[^(]\w*(\)|\{))]', node_string)
+            return varibalbe_str.group(0).split(':') if varibalbe_str else None
 
         def __parse_edge(self, node_string):
             """
@@ -324,8 +256,8 @@ class QueryParser:
         def parse_expression(expression_string, expression_type):
 
 
-        def parse_sub_query(sub_query):
-            # Break to smaller parts with sub clauses - RETURN, WHERE
+            def parse_sub_query(sub_query):
+                # Break to smaller parts with sub clauses - RETURN, WHERE
             # List of: Clause, expressions (, separated)
             clauses_split = split_list(query_part, SUB_CLAUSES)
             # process expressions (of MATCH, WHERE, ...
@@ -362,15 +294,6 @@ class QueryParser:
 
         return parsed_sub_queries
 # TODO variables ???
-
-    @staticmethod
-    def __execute_command(command, *args):
-        # use commands dict
-        pas
-            command = op[0]
-            subcommands = op[1:]
-            QueryEngine.__execute_command(op, *subcommands)
-
 
 """
 Spliting

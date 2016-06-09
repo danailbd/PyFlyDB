@@ -73,3 +73,4 @@ local_settings.py
 source/data/
 *.db
 celerybeat-schedule.db
+.vimrc.local
