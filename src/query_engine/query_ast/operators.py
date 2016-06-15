@@ -1,3 +1,8 @@
+
+"""
+OPERATORS_BY_PRIORITY = ['OR', 'XOR', 'AND', 'OR', '>', '<', '<=', '>=', 'IN']
+"""
+
 # TODO Needs redesign
 class Operator:
     '''

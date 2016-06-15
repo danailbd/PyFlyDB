@@ -19,7 +19,7 @@ class SubQuery:
 
     """Docstring for QueryModel. """
 
-    def __init__(self, commands)
+    def __init__(self, commands):
         """TODO: to be defined1.
 
         Args:
