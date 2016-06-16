@@ -1,5 +1,4 @@
-def ensure_array(value):
-    return value if isinstance(value, list) else [value]
+from src.lib.utils import ensure_array
 
 """
 Either add some serious logic to items or generate them dynamicaly
@@ -86,3 +85,4 @@ SUB_CLAUSES = [
     'DISTINCT',
     'ORDER BY'
 ]
+

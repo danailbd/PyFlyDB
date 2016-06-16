@@ -1,6 +1,4 @@
-def ensure_array(value):
-    return value if isinstance(value, list) else [value]
-
+from src.lib.utils import ensure_array
 
 class Expression:
     '''
@@ -26,4 +24,5 @@ class OperatorExpression(Expression):
 
     def __init__(self, elements):
         Expression.__init__(self, elements)
+
 

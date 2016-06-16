@@ -1,8 +1,4 @@
-# TODO extract to util
-# TODO can be a decorator
-def ensure_array(value):
-    return value if isinstance(value, list) else [value]
-
+from src.lib.utils import ensure_array
 
 class Literal:
     """Defines a literal for an expression."""

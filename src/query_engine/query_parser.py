@@ -2,11 +2,14 @@ import re
 import collections
 import itertools
 
+from src.query_engine.errors.syntax import *
+
 from src.query_engine.query_ast.operators import *
 from src.query_engine.query_ast.query import *
 from src.query_engine.query_ast.models import *
 from src.query_engine.query_ast.clauses import *
 from src.query_engine.query_ast.expression import *
+from src.query_engine.query_ast import utils
 
 '''
 - split to clauses  (Match)
@@ -18,6 +21,8 @@ new MatchClause()
 '''
 
 
+# TODO FIX
+# TODO caseInsensitive
 def split_list(unsplitted, sep_list, PN=False):
     """
     Splits a string by list of separators
@@ -33,16 +38,13 @@ def split_list(unsplitted, sep_list, PN=False):
                 splitted_list.insert(split_pos, splitter)
         else:
             # unary operators - prefix
-
-
-
             for split_pos in range(1, len(splitted_list)):
 
                 splitted_list.insert(split_pos, splitter)
                 if not unsplitted or len(sep_list) == 0:
                     return unsplitted
 
-    splitter = sep_list[0]
+    splitter = sep_list[0] + ' '  # don't match
     rest = sep_list[1:]
     # splitted = []
 
@@ -61,6 +63,7 @@ def split_list(unsplitted, sep_list, PN=False):
 
     return split_list(splitted, rest)
 
+
 # -- EXPRESSIONS --
 
 MATCH_SPLITTERS = ['-']
@@ -73,7 +76,6 @@ COMMANDS = {}
 '''
    ** PARSER **
 '''
-
 
 def __parse_node(node_string):
     """
@@ -118,13 +120,62 @@ def __parse_edge(self, node_string):
     properties = __get_properties(node_string)
     labels = __get_labels(__parse_node)
 
-# clauses
-def generate_expression(str):
-    #TODO
-    return Expression()
 
-def generate_clause(str, expr):
-    pass
+def generate_clause(clause, raw_expr):
+    """
+
+    Args:
+        clause (str):
+        raw_expr (str|List(str)):
+
+    Returns:
+        Clause:
+    """
+    clause = utils.get_clause_type(clause)
+    return clause(raw_expr)
+
+
+def parse_expression(expression, expression_type):
+    """
+
+    Args:
+        expression (str):
+        expression_type (Expression): The type of expression. Note it represents
+            a class, not an instance.
+
+    Returns:
+        Expression: the generated expression
+
+    Raises:
+        InvalidSyntaxError:
+    """
+
+    if expression_type == GraphPatternExpression:
+        parser = parse_graph_expression
+    elif expression_type == OperatorExpression:
+        parser = parse_operator_expression
+    else:
+        raise UnsupportedExpressionType(expression_type)
+
+    return expression_type(parser(expression))
+
+
+def parse_clause(raw_clause):
+    """
+
+    Args:
+        raw_clause (List[srt]): [clause, expr]
+
+    Returns:
+        Clause: The generated clause
+    """
+    clause_str = raw_clause[0]
+    expr = raw_clause[1]
+
+    expr = parse_expression(expr,
+                            utils.get_expression_type(clause_str))
+    return generate_clause(clause_str, expr)
+
 
 class QueryParser:
     """
@@ -132,55 +183,68 @@ class QueryParser:
     """
 
     @staticmethod
-    def parse_query(query_str):
+    def parse_query(query):
         """
         Parses an incoming query
-        CREATE ...
-        MATCH ...
-        as follows:
-            * get subqueries -- [CREATE ..., MATCH, ...]
-            * parse each sub query -
-            * define operation
-            * extract expression
-            * extract sub commands (WHERE, RETURN)
-            * TODO -- optimize query
-            * run sub query
-            * result in identifiers
-            * process next items with results from first
+            CREATE ...
+            MATCH ...
+            as follows:
+                * get subqueries -- [CREATE ..., MATCH, ...]
+                * parse each sub query -
+                * define operation
+                * extract expression
+                * extract sub commands (WHERE, RETURN)
+                * TODO -- optimize query
+                * run sub query
+                * result in identifiers
+                * process next items with results from first
 
-        Returns a list:
-            [ [operation, [*args]], - the comma separated elements
-            [ops, [*args], ...]
-            [ [MATCH, Node, edge, ...] ..]
+        Args:
+            query (str):
+
+        Returns:
+            Query: generated query
+
         """
-        def parse_expression(expression_string, expression_type):
-            pass
 
-        def parse_sub_query(sub_query):
+        def parse_sub_query(raw_sub_query):
+            """
+
+            Args:
+                raw_sub_query (List[str]):
+                    A list containing the sub-query elements,
+                    e.g. ['Match', '(you)'],
+                          ['Match', '(you)', 'Return', 'you.a']
+
+            Returns:
+                SubQuery: generated SubQuery
+            """
 
             # Break to smaller parts with sub clauses - RETURN, WHERE
             # List of: Clause, expressions (, separated)
-            clauses_split = split_list(sub_query, SUB_CLAUSES)
+            subclauses_split = split_list(raw_sub_query, SUB_CLAUSES)
 
             #  process expressions (of MATCH, WHERE, ...
             # TODO expression type is defined by the clause it refers to -- use that cluase
-            expressions_split = parse_expression(sub_split)
+            subclauses = (parse_clause(subclause_list)
+                          for subclause_list in subclauses_split)
 
+            return SubQuery(subclauses)
 
         # Process query by parts.
         # Sub queries are defined by specific Clauses
 
         # TODO trailing spaces
-        sub_queries_str = split_list(query_str, MAIN_CLAUSES)
+        sub_queries_str = split_list(query, MAIN_CLAUSES)
 
-        parsed_sub_queries = [parse_sub_query(sub_query) for sub_query in
-                              sub_queries_str]
+        sub_queries = [parse_sub_query(sub_query) for sub_query in
+                       sub_queries_str]
         # TODO parse to Query object ?
 
         # createSubQueries()
         # createQueryObject()
 
-        return parsed_sub_queries  # TODO variables ???
+        return Query(sub_queries)  # TODO variables ???
 
 
 """

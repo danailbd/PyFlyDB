@@ -14,7 +14,7 @@ class QueryEngine:
         query - String
         """
         query = QueryParser.parse(query)
-        query = QueryOptimizer.optimize(query_model)
+        #TODO query = QueryOptimizer.optimize(query_model)
         self.__execute_query()
 
     @staticmethod

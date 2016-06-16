@@ -26,6 +26,13 @@ class TestQueryParser(TestCase):
         self.assertEquals(split_list('a1 b a2 d a1 b', ['a1', 'a2']),
                           [['a1', 'b'], ['a2', 'd'], ['a1', 'b']])
 
+        # Special conditions
+        self.assertEquals(split_list('Aa1 Ba a2 d aA1 b', ['aa1', 'a2']),
+                          [['aa1', 'Ba'], ['a2', 'd'], ['aa1', 'b']])
+
+        self.assertEquals(split_list('Aa Baa aA baab', ['aa']),
+                          [['aa', 'Baa'], ['aa', 'baab']])
+
     def setUp(self):
         self.parser = QueryParser()
 
