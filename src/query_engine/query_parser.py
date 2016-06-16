@@ -77,48 +77,152 @@ COMMANDS = {}
    ** PARSER **
 '''
 
-def __parse_node(node_string):
+
+def check_valid_edge(raw_node):
+    # Does it have brackets
+    error = None
+    if len(raw_node) - 2 != len(raw_node.strip('[]')):
+        error = 'Edge must be enclosed in []'
+    # TODO other checks
+    # elif
+
+    if error:
+        raise InvalidEdgeError(raw_node, error)
+
+
+def check_valid_node(raw_node):
+    # Does it have brackets
+    error = None
+    if len(raw_node) - 2 != len(raw_node.strip('()')):
+        error = 'Node must be enclosed in ()'
+    # TODO other checks
+    # elif
+
+    if error:
+        raise InvalidNodeError(raw_node, error)
+
+
+def get_properties(raw_node):
     """
-    Accepts (var:label {})
+    Args:
+        raw_node (str):
 
-    Do paring of string to node data and
-    return Node Object
+    Returns:
+        List[Property]:
+
     """
-    properties = __get_properties(node_string)
-
-    labels = __get_labels(__parse_node)
-
-    varibalbe_str = re.search('[^(]\w*(\)|\{))]', node_string)
-    return varibalbe_str.group(0).split(':') if varibalbe_str else None
+    raw_properties = re.search('\{.*\}', raw_node)
+    eval(raw_properties) if raw_properties else None
 
 
-def __get_properties(node_string):
+def get_labels(raw_node):
     """
-        {name: "Emu", ..} - dict use eval
-        returns prop dict or None
-        """
-    properties_string = re.search('\{.*\}', node_string)
-    return eval(properties_string) if properties_string else None
-
-
-def __get_labels(node_string):
-    """
-    varName:Label1:Label2:...
-    returns {
-    varName: ...,
-    labels: []
-    } or None
+    Args:
+        raw_node (str):
+    Returns:
+        List[Label]:
     """
     pass
 
 
-def __parse_edge(self, node_string):
+def get_identifier(raw_node):
+    """
+    Args:
+        raw_node (str):
+
+    Returns:
+        Identifier|None:
+    """
+    identifier_re = ''
+
+
+def parse_node(raw_node):
+    """
+    Node must follow the pattern: ([identifier]:[label:label...] [{properties}])
+    Args:
+        raw_node (str):
+    Returns:
+        Node:
+    Raises:
+        InvalidNodeError:
+    """
+    check_valid_node(raw_node)
+    raw_node = raw_node.strip()
+    node_split = re.search('[^(]\w*(\)|\{))]', raw_node)
+
+    identifier = get_identifier(raw_node)
+    labels = get_labels(raw_node)
+    properties = get_properties(raw_node)
+
+    #return varibalbe_str.group(0).split(':') if varibalbe_str else None
+    return Node(identifier=identifier, labels=labels, properties=properties)
+
+
+def parse_edge(self, raw_edge):
     """
     An edge can
     Returns an edge with specified properties and orientation.
     """
-    properties = __get_properties(node_string)
-    labels = __get_labels(__parse_node)
+    check_valid_node(raw_edge)
+    raw_edge = raw_edge.strip()
+    node_split = re.search('[^(]\w*(\)|\{))]', raw_edge)
+
+    identifier = get_identifier(raw_edge)
+    labels = get_labels(raw_edge)
+    properties = get_properties(raw_edge)
+
+    #return varibalbe_str.group(0).split(':') if varibalbe_str else None
+
+
+
+def parse_simple_graph_expr(raw_simple_expr):
+    """
+    Expression must follow the pattern:
+        Node[Edge && Node ...]
+    Args:
+        raw_simple_expr (str):
+    Returns:
+        SimpleGraphPatternExpression:
+
+    Raises:
+        InvalidGraphExpressionError:
+
+    """
+    # split to items
+    # parse Node, parse Edge
+    simple_expr_raw_elements = raw_simple_expr.split('-')
+
+    parse_method = parse_node
+    simple_expr_elements = []
+
+    for elem in simple_expr_raw_elements:
+        simple_expr_elements.append(parse_method(elem))
+
+        # Alternate parse method
+        parse_method = parse_node if parse_method == parse_edge else parse_edge
+
+    # TODO populate Edges
+
+    return SimpleGraphPatternExpression(simple_expr_elements)
+
+
+def parse_graph_expression(simple_graph_exprs):
+    """
+     ()-[]-(); (); (), ()-[]-()
+     Args:
+         simple_graph_exprs (List[str]):
+     Returns:
+         GraphPatternExpression:
+
+     """
+    # Split by ,
+    # split by -
+    # parse elements as follows -> node, edge, node edge ...
+    # TODO  MOVE TO SPLITTER
+    simple_graph_exprs = [parse_simple_graph_expr(simple_expr)
+                          for simple_expr in simple_graph_exprs]
+
+    return GraphPatternExpression(simple_graph_exprs)
 
 
 def generate_clause(clause, raw_expr):
@@ -149,6 +253,7 @@ def parse_expression(expression, expression_type):
     Raises:
         InvalidSyntaxError:
     """
+    expression = expression.split(',')
 
     if expression_type == GraphPatternExpression:
         parser = parse_graph_expression
@@ -157,7 +262,7 @@ def parse_expression(expression, expression_type):
     else:
         raise UnsupportedExpressionType(expression_type)
 
-    return expression_type(parser(expression))
+    return parser(expression)
 
 
 def parse_clause(raw_clause):
@@ -223,6 +328,8 @@ class QueryParser:
             # Break to smaller parts with sub clauses - RETURN, WHERE
             # List of: Clause, expressions (, separated)
             subclauses_split = split_list(raw_sub_query, SUB_CLAUSES)
+
+            #TODO split expressions by ','
 
             #  process expressions (of MATCH, WHERE, ...
             # TODO expression type is defined by the clause it refers to -- use that cluase
