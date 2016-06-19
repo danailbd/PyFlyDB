@@ -9,7 +9,162 @@ from src.query_engine.query_ast.expression import *
 
 # TODO [0] test string, [1] result object
 
+
 class TestQueryParser(TestCase):
+    def test_parse_graph_expression(self):
+        # test with ,
+        # test with 1 node
+        # test with edge (directed or none)
+        # test with node and edge
+        # test with more edges
+        self.fail()
+
+    def test_get_properties(self):
+        self.assertEquals(get_properties(':lab {a: 1}'),
+                          [Property('a', 1)],
+                          'Normal, spaced, int')
+        self.assertEquals(get_properties(':lab {a: 1.2}'),
+                          [Property('a', 1.2)],
+                          'Normal, spaced, float')
+        self.assertEquals(get_properties(':lab {a: "b"} '),
+                          [Property('a', 'b')],
+                          'Normal spaced str')
+        self.assertEquals(get_properties(' {a: "b"} '),
+                          [Property('a', 'b')],
+                          'Normal; only props')
+        self.assertEquals(get_properties(' {a:"b"} '),
+                          [Property('a', 'b')],
+                          'Normal; no space')
+
+        self.assertEquals(get_properties(' {a:"b", b:"c"} '),
+                          [Property('a', 'b'), Property('b', 'c')],
+                          'Multi prop')
+        self.assertEquals(get_properties(' {a:"b", b:"c",c:1} '),
+                          [Property('a', 'b'), Property('b', 'c'),
+                           Property('c', 1)],
+                          'Multi prop')
+        self.assertEquals(get_properties('a:label '), [])
+        # TODO test EXCEPTIONS
+
+    def test_get_labels(self):
+        self.assertEquals(get_labels('a:lab {a: 1}'),
+                          [Label('lab')])
+        self.assertEquals(get_labels('a:lab:lab1 {a: 1}'),
+                          [Label('lab'), Label('lab1')])
+        self.assertEquals(get_labels(':lab:lab1 {a: 1}'),
+                          [Label('lab'), Label('lab1')])
+        self.assertEquals(get_labels(':lab:lab1'),
+                          [Label('lab'), Label('lab1')])
+        self.assertEquals(get_labels(':lab:lab1:lab3'),
+                          [Label('lab'), Label('lab1'), Label('lab3')])
+        self.assertEquals(get_labels('a {}'),
+                          [])
+
+        self.assertRaises(InvalidLabelsCountError, get_labels, 'a:b:c',
+                          multi=False),
+        self.assertEquals(get_labels('a:b', multi=False),
+                          Label('b')),
+
+        # TODO test EXCEPTIONS
+
+    def test_get_identifier(self):
+        self.assertEquals(get_identifier('a'), Identifier('a'))
+        self.assertEquals(get_identifier('a:b '), Identifier('a'))
+        self.assertIs(get_identifier(':b'), None)
+
+
+    def test_parse_edge(self):
+        # self.assertRaises(InvalidEdgeLabelError,
+        #                   parse_edge, '[]')
+        self.assertEquals(parse_edge('[a]'),
+                          Edge('a'))
+        self.assertEquals(parse_edge('[a {a: 1}]'),
+                          Edge(identifier=Identifier('a'),
+                               properties=[Property('a', 1)]))
+        self.assertEquals(parse_edge('[a:b {a: 1}]'),
+                          Edge(identifier=Identifier('a'),
+                               label=Label('b'),
+                               properties=[Property('a', 1)]))
+        self.assertEquals(parse_edge('[:b {a: 1}]'),
+                          Edge(label=Label('b'),
+                               properties=[Property('a', 1)]))
+        self.assertEquals(parse_edge('[]'),
+                          Edge())
+
+    # check direction
+    #
+
+    # TODO clean up tests
+    def test_parse_node(self):
+        self.assertEquals(parse_node('()'),
+                          Node(),
+                          'Just a node')
+
+        self.assertEquals(parse_node('(id:lab1)'),
+                          Node(identifier=id, labels=[Label('lab1')]),
+                          'Id and label')
+
+        #
+        self.assertEquals(parse_node('(id)'),
+                          Node(identifier=id),
+                          'Just id')
+
+        self.assertEquals(parse_node('(id {a: 1})'),
+                          Node(identifier=id, properties=[Property('a', 1)]),
+                          'Id and props')
+
+        self.assertEquals(parse_node('(id:lab {a: 1})'),
+                          Node(identifier=id,
+                               labels=[Label('lab')],
+                               properties=[Property('a', 1)]),
+                          'Id and props')
+
+        self.assertEquals(parse_node('(:lab {a: 1})'),
+                          Node(labels=[Label('lab')],
+                               properties=[Property('a', 1)]),
+                          'Label and prop')
+
+        self.assertEquals(parse_node('(:lab:lab1:lab2 {a: 1})'),
+                          Node(labels=[Label('lab'), Label('lab1'),
+                                       Label('lab2')],
+                               properties=[Property('a', 1)]),
+                          'Many Labels and prop')
+
+        self.assertEquals(parse_node('(:lab:lab1:lab2)'),
+                          Node(labels=[Label('lab'), Label('lab1'),
+                                       Label('lab2')]),
+                          'Many Labels')
+
+        # PROPERTIES
+
+        self.assertEquals(parse_node('({a: 1})'),
+                          Node(properties=[Property('a', 1)]),
+                          'Spaced prop'),
+
+        self.assertEquals(parse_node('({a:1})'),
+                          Node(properties=[Property('a', 1)]),
+                          'No Spaced prop'),
+
+        self.assertEquals(parse_node('({a:1.12})'),
+                          Node(properties=[Property('a', 1.12)]),
+                          'Float prop'),
+
+        self.assertEquals(parse_node('({a:"abc"})'),
+                          Node(properties=[Property('a', "abc")]),
+                          'Prop with string')
+
+        self.assertEquals(parse_node('({a:"abc"})'),
+                          Node(properties=[Property('a', "abc")]),
+                          'Prop with string')
+
+        self.assertEquals(parse_node('({a:"abc", b: 1})'),
+                          Node(properties=[Property('a', 'abc'),
+                                           Property('b', 1)]),
+                          'Mixed properties')
+        #
+        # TODO raise Tests
+        #
+
     def test_list_split(self):
         self.assertEquals(split_list('a1 b c d', ['a1']),
                           [['a1', 'b c d']])
@@ -65,12 +220,13 @@ class TestQueryParser(TestCase):
         ),
             query.Query([
                 query.SubQuery([
-                    Match(GraphPatternExpression([Node(labels=Label('Database'),
-                                                       identifier=Identifier(
-                                                           'neo'),
-                                                       properties=[
-                                                           Property('name',
-                                                                    'Neo4j')])])),
+                    Match(GraphPatternExpression([SimpleGraphPatternExpression(
+                        [Node(labels=Label('Database'),
+                              identifier=Identifier(
+                                  'neo'),
+                              properties=[
+                                  Property('name',
+                                           'Neo4j')])])])),
                 ]),
                 query.SubQuery([
                     Match(GraphPatternExpression([Node(labels=Label('Person'),
@@ -113,8 +269,10 @@ class TestQueryParser(TestCase):
         self.assertEqual(self.parser.parse_query(COMPOUND_TEST[0]),
                          COMPOUND_TEST[1])
 
+        # TODO test Expressions with ','hj
+
     def test_operator_expressions(self):
-        pass
+        self.fail()
 
     def test_graph_expressions(self):
         SIMPLE_TEST_MATCH_EDGE = [(
@@ -205,4 +363,4 @@ class TestQueryParser(TestCase):
 
 
 def test_exceptions(self):
-    pass
+    self.fail()

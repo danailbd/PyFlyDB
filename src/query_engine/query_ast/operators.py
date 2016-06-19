@@ -1,7 +1,5 @@
 
-"""
 OPERATORS_BY_PRIORITY = ['OR', 'XOR', 'AND', 'OR', '>', '<', '<=', '>=', 'IN']
-"""
 
 # TODO Needs redesign
 class Operator:
@@ -9,13 +7,13 @@ class Operator:
     Base operator class.
     '''
 
-    def __init__(self, op, processor, operands=0):
+    def __init__(self, op, processor, priority, operands=0):
         self.operation = op
         self.priority = priority
         self.processor = processor
         self.operands = operands
 
-    def execute(*args):
+    def execute(self, *args):
         '''
         Pass the required number of operands to the
             operator

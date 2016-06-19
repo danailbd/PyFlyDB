@@ -40,6 +40,17 @@ class InvalidEdgeError(InvalidGraphExpressionError):
         self.msg = msg
 
 
+class InvalidEdgeLabelError(InvalidEdgeError):
+    def __init__(self, value, msg):
+        InvalidEdgeError.__init__(self, value)
+        self.msg = msg
+
+
+class InvalidLabelsCountError(InvalidGraphExpressionError):
+    def __init__(self):
+        pass
+
+
 class InvalidOperatorExpression(InvalidExpressionError):
     def __init__(self, value):
         InvalidExpressionError.__init__(self, value)

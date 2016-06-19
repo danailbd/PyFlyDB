@@ -1,6 +1,7 @@
 import re
 import collections
 import itertools
+import logging as Logger
 
 from src.query_engine.errors.syntax import *
 
@@ -12,6 +13,19 @@ from src.query_engine.query_ast.expression import *
 from src.query_engine.query_ast import utils
 
 '''
+Support Notes:
+- Nodes properties may have space between value and key
+- Properties value may be - string, number
+- Nodes may have more than 1 space between labels and properties
+- Support whitespaces in id/labels  ???
+- Case-sensitive labels and ids  ??
+- Edges with properties
+
+- Only Edge search -> ()-[]-()
+
+- Support split by ',' expressions
+
+
 - split to clauses  (Match)
 - split to sub-query (Where) -> Clause, expr, Cluase, expr ...
 - Parse expression by clause
@@ -19,7 +33,14 @@ from src.query_engine.query_ast import utils
 
 new MatchClause()
 '''
+# TODO flags -> convert to number; find all matches
+# TODO use \w ?? or \S
+IDENTIFIER_REGEX = re.compile('^(\w+)(?:|\s)?')
+LABELS_REGEX = re.compile(':(\w+)(?:|\s)?')
 
+# TODO allowed_val_chars = '\w|\''
+PROPERTIES_BODY_REGEX = re.compile('{(.*?)}')
+PROPERTY_REGEX = re.compile('(?P<key>\w+):\s*"?(?P<val>[\w|.]+)"?,?\s*')
 
 # TODO FIX
 # TODO caseInsensitive
@@ -29,6 +50,8 @@ def split_list(unsplitted, sep_list, PN=False):
 
     Unary prefix by default.
     """
+
+    # TODO use re.split() !!!
 
     def apply_notation(splitted_list, splitter):
         # TODO splitter may provide type of the notation (infix, postfix, suffix)
@@ -69,15 +92,9 @@ def split_list(unsplitted, sep_list, PN=False):
 MATCH_SPLITTERS = ['-']
 MULTI_ELEMENTS_SPLITTER = [',']
 
-OPERATORS_BY_PRIORITY = ['OR', 'XOR', 'AND', 'OR', '>', '<', '<=', '>=', 'IN']
-
-COMMANDS = {}
-
 '''
    ** PARSER **
 '''
-
-
 def check_valid_edge(raw_node):
     # Does it have brackets
     error = None
@@ -102,8 +119,9 @@ def check_valid_node(raw_node):
         raise InvalidNodeError(raw_node, error)
 
 
-def get_properties(raw_node):
+def get_properties(raw_elem):
     """
+    Gets properties; Parses to Number if possible.
     Args:
         raw_node (str):
 
@@ -111,34 +129,84 @@ def get_properties(raw_node):
         List[Property]:
 
     """
-    raw_properties = re.search('\{.*\}', raw_node)
-    eval(raw_properties) if raw_properties else None
+    def to_number(s):
+        """Tries to parse element to number."""
+        try:
+            return float(s)
+        except ValueError:
+            try:
+                return int(s)
+            except ValueError:
+                return s
+
+    # MATCH should work (match the beginning ...)
+    # Else raise error
+    # TODO or use findAll
+    # TODO check for {} brackets
+    properties = []
+    raw_props = PROPERTIES_BODY_REGEX.search(raw_elem)
+    # get matched group
+    if raw_props and raw_props.group(1):
+        raw_props = raw_props.group(1)
+        Logger.debug('Processing properties: ', raw_props)
+
+        # Use Named Groups to match elements
+        match = PROPERTY_REGEX.match(raw_props)
+        while match:
+            key = match.group('key').strip()
+            value = to_number(match.group('val').strip())
+            properties.append(Property(key=key, value=value))
+
+            match = PROPERTY_REGEX.match(raw_props, match.end())
+
+    return properties
 
 
-def get_labels(raw_node):
+def get_labels(raw_elem, multi=True):
     """
+     ;id {};id:... {}
     Args:
         raw_node (str):
     Returns:
         List[Label]:
     """
-    pass
+    match = LABELS_REGEX.findall(raw_elem)
+    # edge labels
+    if match and (len(match) > 1 and not multi):
+        raise InvalidLabelsCountError()
+    # Make to system labels
+    match = [Label(raw_label) for raw_label in match]
+    if match and not multi:
+        # Is edge label
+        match = match[0]
+    return match
 
 
-def get_identifier(raw_node):
+def get_identifier(raw_elem):
     """
+     ;id {};id:... {}
     Args:
         raw_node (str):
-
     Returns:
         Identifier|None:
     """
-    identifier_re = ''
+    match = IDENTIFIER_REGEX.search(raw_elem)
+    if match:
+        match = Identifier(match.group(1).strip())
+    return match
+
+
+def is_node(raw_elem):
+    pass
+
+
+def is_edge(raw_elem):
+    pass
 
 
 def parse_node(raw_node):
     """
-    Node must follow the pattern: ([identifier]:[label:label...] [{properties}])
+    Node must follow the pattern: ([identifier][:label:label...] [{properties}])
     Args:
         raw_node (str):
     Returns:
@@ -147,32 +215,27 @@ def parse_node(raw_node):
         InvalidNodeError:
     """
     check_valid_node(raw_node)
-    raw_node = raw_node.strip()
-    node_split = re.search('[^(]\w*(\)|\{))]', raw_node)
 
     identifier = get_identifier(raw_node)
     labels = get_labels(raw_node)
     properties = get_properties(raw_node)
 
-    #return varibalbe_str.group(0).split(':') if varibalbe_str else None
     return Node(identifier=identifier, labels=labels, properties=properties)
 
 
-def parse_edge(self, raw_edge):
+def parse_edge(raw_edge):
     """
     An edge can
     Returns an edge with specified properties and orientation.
     """
-    check_valid_node(raw_edge)
+    check_valid_edge(raw_edge)
     raw_edge = raw_edge.strip()
-    node_split = re.search('[^(]\w*(\)|\{))]', raw_edge)
 
     identifier = get_identifier(raw_edge)
-    labels = get_labels(raw_edge)
+    label = get_labels(raw_edge, True)
     properties = get_properties(raw_edge)
 
-    #return varibalbe_str.group(0).split(':') if varibalbe_str else None
-
+    return Edge(identifier=identifier, label=label, properties=properties)
 
 
 def parse_simple_graph_expr(raw_simple_expr):
@@ -192,16 +255,20 @@ def parse_simple_graph_expr(raw_simple_expr):
     # parse Node, parse Edge
     simple_expr_raw_elements = raw_simple_expr.split('-')
 
-    parse_method = parse_node
     simple_expr_elements = []
 
     for elem in simple_expr_raw_elements:
-        simple_expr_elements.append(parse_method(elem))
+        # Parse by element type
+        if is_node(elem):
+            parsed_elem = parse_node(elem)
+        elif is_edge(elem):
+            parsed_elem = parse_edge(elem)
 
-        # Alternate parse method
-        parse_method = parse_node if parse_method == parse_edge else parse_edge
+        else:
+            raise InvalidGraphExpressionError(elem)
 
-    # TODO populate Edges
+        simple_expr_elements.append(parsed_elem)
+        # TODO populate Edges
 
     return SimpleGraphPatternExpression(simple_expr_elements)
 
@@ -329,7 +396,7 @@ class QueryParser:
             # List of: Clause, expressions (, separated)
             subclauses_split = split_list(raw_sub_query, SUB_CLAUSES)
 
-            #TODO split expressions by ','
+            # TODO split expressions by ','
 
             #  process expressions (of MATCH, WHERE, ...
             # TODO expression type is defined by the clause it refers to -- use that cluase

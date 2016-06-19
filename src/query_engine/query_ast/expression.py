@@ -30,7 +30,7 @@ class GraphPatternExpression(Expression):
         """
 
         Args:
-            simple_exprs (SimpleGraphPatternExpression):
+            simple_exprs (List[SimpleGraphPatternExpression]):
         """
         Expression.__init__(self, simple_exprs)
 

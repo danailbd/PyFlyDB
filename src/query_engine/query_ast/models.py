@@ -1,5 +1,6 @@
 from src.lib.utils import ensure_array
 
+
 class Literal:
     """Defines a literal for an expression."""
 
@@ -10,11 +11,22 @@ class Literal:
         """
         self._value = value
 
+    def __repr__(self):
+        return self._value
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
 class Property:
     def __init__(self, key, value):
         self.key = key
         self.value = value
+
+    def __repr__(self):
+        return self.key + ':' + str(self.value)
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
 
 class Identifier:
@@ -35,10 +47,22 @@ class Identifier:
     def value(self):
         return self._value
 
+    def __repr__(self):
+        return self._letter + ' ' + self._value
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
+
 
 class Label:
     def __init__(self, name):
         self.name = name
+
+    def __repr__(self):
+        return self.name
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
 
 class Edge:
@@ -53,7 +77,7 @@ class Edge:
         is determined from the node sequence given
         """
 
-    def __init__(self, node_in, node_out, label='', directed=False,
+    def __init__(self, node_in=None, node_out=None, label='', directed=False,
                  identifier=None,
                  properties=()):
         """
@@ -71,6 +95,14 @@ class Edge:
         self.__node_out = node_out
         self.__directed = directed
         self.identifier = identifier
+
+    def __repr__(self):
+        return self.identifier + ':' + self.__label + \
+               ' ' + self.__properties + ' ' + self.__node_in + \
+               ' ' + self.__node_out + ' ' + str(self.__directed)
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
     def isDirected(self):
         return self.direction
@@ -115,6 +147,12 @@ class Node:
         self.identifier = identifier
         self.properties = ensure_array(properties)
         self.labels = ensure_array(labels)
+
+    def __repr__(self):
+        return self.identifier + ':' + self.labels + ' ' + self.properties
+
+    def __eq__(self, other):
+        return self.__dict__ == other.__dict__
 
 
 class ReturnNode(Node):
