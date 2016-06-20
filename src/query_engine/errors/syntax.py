@@ -28,14 +28,24 @@ class InvalidGraphExpressionError(InvalidExpressionError):
         InvalidExpressionError.__init__(self, value)
 
 
+class BadGraphExpressionElementError(InvalidGraphExpressionError):
+    def __init__(self, value):
+        self.value = value
+
+
 class InvalidNodeError(InvalidGraphExpressionError):
     def __init__(self, value, msg):
         InvalidGraphExpressionError.__init__(self, value)
         self.msg = msg
 
 
+class EmptyGraphPatternExpressionError(InvalidGraphExpressionError):
+    def __init__(self, value):
+        self.value = value
+
+
 class InvalidEdgeError(InvalidGraphExpressionError):
-    def __init__(self, value, msg):
+    def __init__(self, value, msg=''):
         InvalidGraphExpressionError.__init__(self, value)
         self.msg = msg
 

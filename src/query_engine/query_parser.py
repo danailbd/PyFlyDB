@@ -1,6 +1,6 @@
 import re
-import collections
-import itertools
+from enum import Enum
+
 import logging as Logger
 
 from src.query_engine.errors.syntax import *
@@ -10,7 +10,8 @@ from src.query_engine.query_ast.query import *
 from src.query_engine.query_ast.models import *
 from src.query_engine.query_ast.clauses import *
 from src.query_engine.query_ast.expression import *
-from src.query_engine.query_ast import utils
+from src.query_engine.query_ast.utils import *
+from src.lib import utils
 
 '''
 Support Notes:
@@ -33,58 +34,45 @@ Support Notes:
 
 new MatchClause()
 '''
+MATCH_NODE = '\((?P<node>.*?)\)'
+MATCH_EDGE = '\[(?P<edge>.*?)\]'
+PARSE_GRAPH_EXPRESSION = re.compile('({})|({})'.format(MATCH_NODE, MATCH_EDGE))
+
+
+# TODO ONE BIG VALIDATION REGEX
+
+class EdgeDirections(Enum):
+    left = 1
+    right = 2
+
 # TODO flags -> convert to number; find all matches
 # TODO use \w ?? or \S
 IDENTIFIER_REGEX = re.compile('^(\w+)(?:|\s)?')
-LABELS_REGEX = re.compile(':(\w+)(?:|\s)?')
+
+# Match labels, without matching properties
+LABELS_REGEX = re.compile('[\w:]*?:(\w+)(?:|\s)?')
 
 # TODO allowed_val_chars = '\w|\''
 PROPERTIES_BODY_REGEX = re.compile('{(.*?)}')
 PROPERTY_REGEX = re.compile('(?P<key>\w+):\s*"?(?P<val>[\w|.]+)"?,?\s*')
 
+BODY_REGEX = '(.*?)'
+EDGE_BODY_REGEX = re.compile('<?-\[{}\]->?'.format(BODY_REGEX))
+NODE_BODY_REGEX = re.compile('\({}\)'.format(BODY_REGEX))
+
+
 # TODO FIX
 # TODO caseInsensitive
-def split_list(unsplitted, sep_list, PN=False):
+def split_list(unsplitted, sep_list):
     """
     Splits a string by list of separators
-
-    Unary prefix by default.
     """
+    splitted = re.split('\s*({})\s*'.format('|'.join(sep_list)),
+                        unsplitted)
 
-    # TODO use re.split() !!!
-
-    def apply_notation(splitted_list, splitter):
-        # TODO splitter may provide type of the notation (infix, postfix, suffix)
-        if PN:
-            # Binary operators - in_fix
-            for split_pos in range(0, len(splitted_list), 3):
-                splitted_list.insert(split_pos, splitter)
-        else:
-            # unary operators - prefix
-            for split_pos in range(1, len(splitted_list)):
-
-                splitted_list.insert(split_pos, splitter)
-                if not unsplitted or len(sep_list) == 0:
-                    return unsplitted
-
-    splitter = sep_list[0] + ' '  # don't match
-    rest = sep_list[1:]
-    # splitted = []
-
-    if isinstance(unsplitted, list):
-        splitted_list = []
-        for sub_str in unsplitted:
-            splitted_com = sub_str.split(splitter)
-            if len(splitted_com) > 0:
-                apply_notation(splitted_com, splitter)
-
-            splitted_list.append(splitted_com)
-        splitted = list(itertools.chain(*splitted_list))
-    else:
-        splitted = unsplitted.split(splitter)
-        apply_notation(splitted, splitter)
-
-    return split_list(splitted, rest)
+    if len(splitted) > 0 and not splitted[0]:
+        splitted = splitted[1:]
+    return splitted
 
 
 # -- EXPRESSIONS --
@@ -95,25 +83,23 @@ MULTI_ELEMENTS_SPLITTER = [',']
 '''
    ** PARSER **
 '''
+
+
 def check_valid_edge(raw_node):
-    # Does it have brackets
+    # XXX
+    # TODO FIX
+    # XXX
     error = None
-    if len(raw_node) - 2 != len(raw_node.strip('[]')):
-        error = 'Edge must be enclosed in []'
-    # TODO other checks
-    # elif
 
     if error:
         raise InvalidEdgeError(raw_node, error)
 
 
 def check_valid_node(raw_node):
-    # Does it have brackets
+    # XXX
+    # TODO FIX
+    # XXX
     error = None
-    if len(raw_node) - 2 != len(raw_node.strip('()')):
-        error = 'Node must be enclosed in ()'
-    # TODO other checks
-    # elif
 
     if error:
         raise InvalidNodeError(raw_node, error)
@@ -129,13 +115,22 @@ def get_properties(raw_elem):
         List[Property]:
 
     """
+
     def to_number(s):
         """Tries to parse element to number."""
-        try:
-            return float(s)
-        except ValueError:
+
+        def is_int(n):
             try:
-                return int(s)
+                int(n)
+            except ValueError:
+                return False
+            return float(n) == int(n)
+
+        if is_int(s):
+            return int(s)
+        else:
+            try:
+                return float(s)
             except ValueError:
                 return s
 
@@ -159,27 +154,35 @@ def get_properties(raw_elem):
 
             match = PROPERTY_REGEX.match(raw_props, match.end())
 
-    return properties
+    return tuple(properties)
 
 
 def get_labels(raw_elem, multi=True):
     """
      ;id {};id:... {}
     Args:
-        raw_node (str):
+        raw_elem (str):
+        multi (bool):
     Returns:
         List[Label]:
     """
-    match = LABELS_REGEX.findall(raw_elem)
+    matches = []
+    # NOTE Use match to match the begging.
+    match = LABELS_REGEX.match(raw_elem)
+    while match:
+        matches.append(match.group(1))
+        match = LABELS_REGEX.match(raw_elem, match.end())
+
     # edge labels
-    if match and (len(match) > 1 and not multi):
+    if matches and (len(matches) > 1 and not multi):
         raise InvalidLabelsCountError()
     # Make to system labels
-    match = [Label(raw_label) for raw_label in match]
-    if match and not multi:
+    matches = tuple(Label(raw_label.strip()) for raw_label in matches)
+    if not multi:
         # Is edge label
-        match = match[0]
-    return match
+        return matches[0] if matches else None
+    else:
+        return matches
 
 
 def get_identifier(raw_elem):
@@ -196,46 +199,71 @@ def get_identifier(raw_elem):
     return match
 
 
-def is_node(raw_elem):
-    pass
-
-
-def is_edge(raw_elem):
-    pass
-
-
 def parse_node(raw_node):
     """
     Node must follow the pattern: ([identifier][:label:label...] [{properties}])
     Args:
-        raw_node (str):
+        raw_node (str): (data)
     Returns:
         Node:
     Raises:
         InvalidNodeError:
     """
     check_valid_node(raw_node)
+    raw_node_body = NODE_BODY_REGEX.match(raw_node)
+    if raw_node_body:
+        raw_node_body = raw_node_body.group(1).strip()
+    else:
+        raise InvalidEdgeError(raw_node)
 
-    identifier = get_identifier(raw_node)
-    labels = get_labels(raw_node)
-    properties = get_properties(raw_node)
+    identifier = get_identifier(raw_node_body)
+    labels = get_labels(raw_node_body)
+    properties = get_properties(raw_node_body)
 
     return Node(identifier=identifier, labels=labels, properties=properties)
 
 
-def parse_edge(raw_edge):
+def parse_edge(raw_edge, node_left, node_right):
     """
-    An edge can
-    Returns an edge with specified properties and orientation.
+    Args:
+        raw_edge (str): -[]-, <-[]-, ...
+        node_left (Node):
+        node_right (Node):
+    Returns:
+        Edge:
     """
+
+    def get_edge_direction(raw_edge):
+        # TODO raise on bad direction ...
+        if raw_edge[0] == '<':
+            return EdgeDirections.left
+        elif raw_edge[len(raw_edge) - 1] == '>':
+            return EdgeDirections.right
+        return None
+
     check_valid_edge(raw_edge)
-    raw_edge = raw_edge.strip()
+    raw_edge_body = EDGE_BODY_REGEX.match(raw_edge)
+    if raw_edge_body:
+        raw_edge_body = raw_edge_body.group(1).strip()
+    else:
+        raise InvalidEdgeError(raw_edge)
 
-    identifier = get_identifier(raw_edge)
-    label = get_labels(raw_edge, True)
-    properties = get_properties(raw_edge)
+    identifier = get_identifier(raw_edge_body)
+    label = get_labels(raw_edge_body, False)
+    properties = get_properties(raw_edge_body)
+    direction = get_edge_direction(raw_edge)
 
-    return Edge(identifier=identifier, label=label, properties=properties)
+    if direction == EdgeDirections.left:
+        # Swap edges to keep the proper ordering
+        # simplifies the code
+        node_left, node_right = node_right, node_left
+
+    return Edge(identifier=identifier,
+                label=label,
+                properties=properties,
+                directed=bool(direction),
+                node_in=node_left,
+                node_out=node_right)
 
 
 def parse_simple_graph_expr(raw_simple_expr):
@@ -251,26 +279,48 @@ def parse_simple_graph_expr(raw_simple_expr):
         InvalidGraphExpressionError:
 
     """
+
     # split to items
     # parse Node, parse Edge
-    simple_expr_raw_elements = raw_simple_expr.split('-')
+    def collect_elements(raw_simple_expr):
+        raw_nodes = []
+        raw_edges = []
 
-    simple_expr_elements = []
+        match = PARSE_GRAPH_EXPRESSION.match(raw_simple_expr)
+        while match:
+            if match.group('node') or match.group() == '()':
+                raw_nodes.append(match.group('node'))
+            elif match.group('edge') or match.group() == '[]':
+                raw_edges.append(match.group('edge'))
+            else:
+                raise BadGraphExpressionElementError(match.group())
+            match = PARSE_GRAPH_EXPRESSION.match(raw_simple_expr, match.end())
 
-    for elem in simple_expr_raw_elements:
-        # Parse by element type
-        if is_node(elem):
-            parsed_elem = parse_node(elem)
-        elif is_edge(elem):
-            parsed_elem = parse_edge(elem)
+        return {'nodes': raw_edges, 'edges': raw_edges}
 
-        else:
-            raise InvalidGraphExpressionError(elem)
+    raw_elements = collect_elements(raw_simple_expr)
 
-        simple_expr_elements.append(parsed_elem)
+    # TODO check number of nodes
+
+    # Parse nodes
+    nodes = [parse_node(raw_node) for raw_node in raw_elements['nodes']]
+
+    edges = []
+    # Parse edges
+    nodes_iter = iter(nodes)
+    for raw_edge in raw_elements['nodes']:
+        edges.append(parse_edge(raw_edge, next(nodes_iter), next(nodes_iter)))
         # TODO populate Edges
 
-    return SimpleGraphPatternExpression(simple_expr_elements)
+    res = None
+    if edges:
+        res = edges
+    elif nodes:
+        if len(nodes) > 1:
+            raise InvalidGraphExpressionError
+        res = nodes[0]
+
+    return SimpleGraphPatternExpression(res)
 
 
 def parse_graph_expression(simple_graph_exprs):
@@ -290,6 +340,11 @@ def parse_graph_expression(simple_graph_exprs):
                           for simple_expr in simple_graph_exprs]
 
     return GraphPatternExpression(simple_graph_exprs)
+
+
+def parse_operator_expression(simple_graph_exprs):
+    # TODO
+    pass
 
 
 def generate_clause(clause, raw_expr):
@@ -341,11 +396,10 @@ def parse_clause(raw_clause):
     Returns:
         Clause: The generated clause
     """
-    clause_str = raw_clause[0]
-    expr = raw_clause[1]
+    clause_str, expr = raw_clause
 
     expr = parse_expression(expr,
-                            utils.get_expression_type(clause_str))
+                            get_expression_type(clause_str))
     return generate_clause(clause_str, expr)
 
 
@@ -381,7 +435,6 @@ class QueryParser:
 
         def parse_sub_query(raw_sub_query):
             """
-
             Args:
                 raw_sub_query (List[str]):
                     A list containing the sub-query elements,
@@ -394,14 +447,14 @@ class QueryParser:
 
             # Break to smaller parts with sub clauses - RETURN, WHERE
             # List of: Clause, expressions (, separated)
-            subclauses_split = split_list(raw_sub_query, SUB_CLAUSES)
-
-            # TODO split expressions by ','
+            clause = raw_sub_query[0]
+            subclauses_split = split_list(raw_sub_query[1], SUB_CLAUSES)
 
             #  process expressions (of MATCH, WHERE, ...
             # TODO expression type is defined by the clause it refers to -- use that cluase
-            subclauses = (parse_clause(subclause_list)
-                          for subclause_list in subclauses_split)
+            subclauses = (parse_clause(clause)
+                          for clause in
+                          utils.pairwise((clause, *subclauses_split)))
 
             return SubQuery(subclauses)
 
@@ -409,7 +462,7 @@ class QueryParser:
         # Sub queries are defined by specific Clauses
 
         # TODO trailing spaces
-        sub_queries_str = split_list(query, MAIN_CLAUSES)
+        sub_queries_str =  utils.pairwise(split_list(query, MAIN_CLAUSES))
 
         sub_queries = [parse_sub_query(sub_query) for sub_query in
                        sub_queries_str]

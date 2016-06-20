@@ -1,6 +1,11 @@
 from src.lib.utils import ensure_array
 
 
+class Printable:
+    def __repr__(self):
+        return "<" + type(self).__name__ + "> " + str(self.__dict__)
+
+
 class Literal:
     """Defines a literal for an expression."""
 
@@ -17,24 +22,25 @@ class Literal:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-class Property:
+
+class Property(Printable):
     def __init__(self, key, value):
         self.key = key
         self.value = value
 
     def __repr__(self):
-        return self.key + ':' + str(self.value)
+        return '<Property><' + self.key + ': ' + str(self.value) + '>'
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
 
-class Identifier:
+class Identifier(Printable):
     """
     Defines an identifier for a query. It can be
     """
 
-    def __init__(self, letter, value=None):
+    def __init__(self, letter=None, value=None):
         """
         Args:
             letter:
@@ -47,15 +53,18 @@ class Identifier:
     def value(self):
         return self._value
 
+    def __str__(self):
+        return self._letter + ' ' + str(self._value)
+
     def __repr__(self):
-        return self._letter + ' ' + self._value
+        return '<Identifier><' + str(self._letter) + ' ' + str(self._value) + '>'
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
 
-class Label:
-    def __init__(self, name):
+class Label(Printable):
+    def __init__(self, name=None):
         self.name = name
 
     def __repr__(self):
@@ -65,7 +74,7 @@ class Label:
         return self.__dict__ == other.__dict__
 
 
-class Edge:
+class Edge(Printable):
     """
     TODO: make it immutable
     An edge:
@@ -77,15 +86,14 @@ class Edge:
         is determined from the node sequence given
         """
 
-    def __init__(self, node_in=None, node_out=None, label='', directed=False,
-                 identifier=None,
-                 properties=()):
+    def __init__(self, node_in=None, node_out=None, label=None,
+                 directed=False, identifier=None, properties=()):
         """
         Args:
             label:
-            node_in:
-            node_out:
-            directed:
+            node_in (Node):
+            node_out (Node):
+            directed (Boolean|String): left or right directed
             identifier:
             properties:
         """
@@ -97,26 +105,29 @@ class Edge:
         self.identifier = identifier
 
     def __repr__(self):
-        return self.identifier + ':' + self.__label + \
-               ' ' + self.__properties + ' ' + self.__node_in + \
-               ' ' + self.__node_out + ' ' + str(self.__directed)
+        return '<Edge> ' + str(self.identifier) + ':' + \
+               str(self.__label) + ' { ' + str(self.__properties) + ' } < ' + \
+               str(self.__node_in) + ' > < ' + str(self.__node_out) + ' > - ' +  \
+               str(self.__directed)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
-    def isDirected(self):
-        return self.direction
+    def is_directed(self):
+        return self.__directed
 
-    def getNodes(self):
+    def get_nodes(self):
         """
         Get a directed node pair out - in (direction flag needed)
         """
-        return (self.nodeOut, self.nodeIn)
+        return (self.__node_in, self.__node_out)
 
-    def getLabel(self):
+    @property
+    def label(self):
         return self.__label
 
-    def getProperties(self):
+    @property
+    def properties(self):
         return self.__properties
 
 
@@ -134,7 +145,7 @@ class ReturnEdge(Edge):
         # TODO implement setters
 
 
-class Node:
+class Node(Printable):
     """
     TODO: make it immutable
     A node:
@@ -147,9 +158,6 @@ class Node:
         self.identifier = identifier
         self.properties = ensure_array(properties)
         self.labels = ensure_array(labels)
-
-    def __repr__(self):
-        return self.identifier + ':' + self.labels + ' ' + self.properties
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

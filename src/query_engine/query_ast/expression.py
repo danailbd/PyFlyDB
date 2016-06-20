@@ -1,7 +1,8 @@
 from src.lib.utils import ensure_array
+from src.lib.Printable import Printable
 
 
-class Expression:
+class Expression(Printable):
     '''
     A where (and other elements?) expression handler
     Contains a list of elements - variables, consts and operations
@@ -9,6 +10,12 @@ class Expression:
 
     def __init__(self, elements):
         self.elements = ensure_array(elements)
+
+    def __repr__(self):
+        return '<' + type(self).__name__ + '>' + str(self.elements)
+
+    def __eq__(self, other):
+        return self.elements == other.elements
 
     # TODO probably not ...
     def validate_expression(self):
