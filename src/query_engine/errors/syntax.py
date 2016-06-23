@@ -44,6 +44,12 @@ class EmptyGraphPatternExpressionError(InvalidGraphExpressionError):
         self.value = value
 
 
+class InvalidGraphExpressionPropertiesError(InvalidGraphExpressionError):
+    def __init__(self, value, msg=''):
+        InvalidGraphExpressionError.__init__(self, value)
+        self.msg = msg
+
+
 class InvalidEdgeError(InvalidGraphExpressionError):
     def __init__(self, value, msg=''):
         InvalidGraphExpressionError.__init__(self, value)

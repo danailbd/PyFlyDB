@@ -1,4 +1,4 @@
-from src.lib.utils import ensure_array
+from src.lib.utils import ensure_tuple
 
 
 class Printable:
@@ -25,6 +25,11 @@ class Literal:
 
 class Property(Printable):
     def __init__(self, key, value):
+        """
+        Args:
+            key:
+            value (str|number|Identifier):
+        """
         self.key = key
         self.value = value
 
@@ -35,35 +40,50 @@ class Property(Printable):
         return self.__dict__ == other.__dict__
 
 
-class Identifier(Printable):
+class Identifier:
     """
     Defines an identifier for a query. It can be
     """
 
-    def __init__(self, letter=None, value=None):
+    def __init__(self, name=None, fields=(), value=None):
         """
         Args:
             letter:
             value:
         """
-        self._letter = letter
+        self._name = name
         self._value = value
+        self._fields = ensure_tuple(fields)
 
     @property
     def value(self):
         return self._value
 
     def __str__(self):
-        return self._letter + ' ' + str(self._value)
+        return self._name + '.' + '.'.join(self._fields) + ' ' +\
+               str(self._value)
 
     def __repr__(self):
-        return '<Identifier><' + str(self._letter) + ' ' + str(self._value) + '>'
+        return '<Identifier><' + str(self._name) + ' ' + str(self._value) + '>'
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
 
-class Label(Printable):
+class Variable(Identifier):
+    """Keeps data about referenced identifiers."""
+    def __init__(self, name, fields):
+        """
+        Args:
+            name (str):
+            fields (List[str]): represents the variable properties
+            sequence -> a.b.c -> [b, c]
+        """
+        Identifier.__init__(self, name)
+        self.fields = ensure_tuple(fields)
+
+
+class Label:
     def __init__(self, name=None):
         self.name = name
 
@@ -93,22 +113,22 @@ class Edge(Printable):
             label:
             node_in (Node):
             node_out (Node):
-            directed (Boolean|String): left or right directed
-            identifier:
+            directed (bool|str): left or right directed
+            identifier (Identifier|Variable):
             properties:
         """
         self.__label = label
-        self.__properties = ensure_array(properties)
+        self.__properties = ensure_tuple(properties)
         self.__node_in = node_in
         self.__node_out = node_out
         self.__directed = directed
         self.identifier = identifier
 
     def __repr__(self):
-        return '<Edge> ' + str(self.identifier) + ':' + \
+        return '<Edge>[' + str(self.identifier) + ':' + \
                str(self.__label) + ' { ' + str(self.__properties) + ' } < ' + \
                str(self.__node_in) + ' > < ' + str(self.__node_out) + ' > - ' +  \
-               str(self.__directed)
+               str(self.__directed) + ']'
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
@@ -156,8 +176,8 @@ class Node(Printable):
 
     def __init__(self, labels=(), identifier=None, properties=()):
         self.identifier = identifier
-        self.properties = ensure_array(properties)
-        self.labels = ensure_array(labels)
+        self.properties = ensure_tuple(properties)
+        self.labels = ensure_tuple(labels)
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

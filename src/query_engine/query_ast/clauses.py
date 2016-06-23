@@ -1,4 +1,4 @@
-from src.lib.utils import ensure_array
+from src.lib.utils import ensure_tuple
 
 """
 Either add some serious logic to items or generate them dynamicaly
@@ -55,7 +55,7 @@ class Where(Clause):
 class Return(Clause):
 
     def __init__(self, props=()):
-        self.props = ensure_array(props)
+        self.props = ensure_tuple(props)
 
         #raise InvalidArguments('Return needs at least one item')
 

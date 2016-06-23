@@ -1,4 +1,4 @@
-from src.lib.utils import ensure_array
+from src.lib.utils import ensure_tuple
 from src.lib.Printable import Printable
 
 
@@ -9,7 +9,7 @@ class Expression(Printable):
     '''
 
     def __init__(self, elements):
-        self.elements = ensure_array(elements)
+        self.elements = ensure_tuple(elements)
 
     def __repr__(self):
         return '<' + type(self).__name__ + '>' + str(self.elements)

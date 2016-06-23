@@ -23,30 +23,30 @@ class TestQueryParser(TestCase):
         ##                   parse_graph_expression, ['()-[]-()'])
 
         self.assertEquals(parse_graph_expression(['(a)']),
-                          GraphPatternExpression([SimpleGraphPatternExpression(
-                              [Node(identifier=Identifier('a'))])]))
+                          GraphPatternExpression((SimpleGraphPatternExpression(
+                              (Node(identifier=Identifier('a')))))))
         self.assertEquals(parse_graph_expression(['(a)-[]-(b)']),
                           GraphPatternExpression(
-                              [SimpleGraphPatternExpression([Edge(
+                              (SimpleGraphPatternExpression((Edge(
                                   directed=False,
                                   node_out=Node(identifier=Identifier('b')),
-                                  node_in=Node(identifier=Identifier('a')))])]))
+                                  node_in=Node(identifier=Identifier('a'))))))))
         self.assertEquals(parse_graph_expression(['(a)-[:b]-(b)']),
                           GraphPatternExpression(
-                              [SimpleGraphPatternExpression([Edge(
+                              (SimpleGraphPatternExpression((Edge(
                                   label=Label('b'),
                                   directed=False,
                                   node_out=Node(identifier=Identifier('b')),
-                                  node_in=Node(identifier=Identifier('a')))])]))
+                                  node_in=Node(identifier=Identifier('a'))))))))
         self.assertEquals(parse_graph_expression(['(a)<-[]-(b)']),
                           GraphPatternExpression(
-                              [SimpleGraphPatternExpression([Edge(
+                              (SimpleGraphPatternExpression((Edge(
                                   directed=True,
                                   node_out=Node(identifier=Identifier('a')),
-                                  node_in=Node(identifier=Identifier('b')))])]))
+                                  node_in=Node(identifier=Identifier('b'))))))))
 
         self.assertEquals(parse_graph_expression(['(a)<-[:b]-()-[:c]->(d)']),
-                          GraphPatternExpression([SimpleGraphPatternExpression([
+                          GraphPatternExpression((SimpleGraphPatternExpression((
                               Edge(label=Label('b'),
                                    directed=True,
                                    node_out=Node(identifier=Identifier('a')),
@@ -55,17 +55,17 @@ class TestQueryParser(TestCase):
                                    directed=True,
                                    node_out=Node(identifier=Identifier('d')),
                                    node_in=Node())
-                          ])]))
+                          )))))
 
         self.assertEquals(parse_graph_expression(['(a)<-[]-(b)',
                                                   '(c)']),
-                          GraphPatternExpression([
-                              SimpleGraphPatternExpression([Edge(
+                          GraphPatternExpression((
+                              SimpleGraphPatternExpression((Edge(
                                   directed=True,
                                   node_out=Node(identifier=Identifier('a')),
-                                  node_in=Node(identifier=Identifier('b')))]),
+                                  node_in=Node(identifier=Identifier('b'))))),
                               SimpleGraphPatternExpression(
-                                  [Node(identifier='c')])]))
+                                  (Node(identifier=Identifier('c')))))))
 
     def test_get_properties(self):
         self.assertEquals(get_properties(':lab {a: 1}'),
@@ -92,6 +92,21 @@ class TestQueryParser(TestCase):
                            Property('c', 1)),
                           'Multi prop')
         self.assertEquals(get_properties('a:label '), ())
+
+        self.assertEquals(get_properties(' {a: c.b, b: a.b.d} '),
+                          (Property('a', Identifier(name='c', fields=('b',))),
+                           Property('b',
+                                    Identifier(name='a', fields=('b', 'd')))),
+                          'Variable properties')
+        self.assertEquals(get_properties(' {a: c.b, b:"c"} '),
+                          (Property('a', Identifier(name='c', fields=('b',))),
+                           Property('b', 'c')),
+                          'Variable properties')
+        self.assertEquals(get_properties(' {a: c.b.d.df, b:"c"} '),
+                          (Property('a', Identifier(name='c',
+                                                    fields=('b', 'd', 'df'))),
+                           Property('b', 'c')),
+                          'Variable properties more')
         # TODO test EXCEPTIONS
 
     def test_get_labels(self):
@@ -121,7 +136,12 @@ class TestQueryParser(TestCase):
 
     def test_get_identifier(self):
         self.assertEquals(get_identifier('a'), Identifier('a'))
+        self.assertEquals(get_identifier('a.b'), Identifier(name='a',
+                                                            fields=('b',)))
+        self.assertEquals(get_identifier('a.bc.cf'),
+                          Identifier(name='a', fields=('bc', 'cf')))
         self.assertEquals(get_identifier('a:b '), Identifier('a'))
+        self.assertEquals(get_identifier('a.b:b '), Identifier('a', ('b',)))
         self.assertIs(get_identifier(':b'), None)
 
     def test_parse_edge(self):
@@ -178,7 +198,8 @@ class TestQueryParser(TestCase):
                           'Just id')
 
         self.assertEquals(parse_node('(id {a: 1})'),
-                          Node(identifier=Identifier('id'), properties=(Property('a', 1),)),
+                          Node(identifier=Identifier('id'),
+                               properties=(Property('a', 1),)),
                           'Id and props')
 
         self.assertEquals(parse_node('(id:lab {a: 1})'),
@@ -255,6 +276,9 @@ class TestQueryParser(TestCase):
 
         self.assertEquals(split_list('Aa Baa aA baab', ['aa']),
                           ['aa', 'Baa', 'aa', 'baab'])
+
+    def test_parse_id_expression(self):
+        self.fail()
 
     def setUp(self):
         self.parser = QueryParser()
@@ -375,17 +399,15 @@ class TestQueryParser(TestCase):
         ),
             query.Query([
                 query.SubQuery([
-                    Create(GraphPatternExpression([
-                        Node(
-                            identifier=Identifier('you'),
-                            labels=Label('Person'),
-                            properties=
-                            Property('name',
-                                     'You'))
-                    ]))
+                    Create(GraphPatternExpression(
+                        (SimpleGraphPatternExpression((
+                            Node(identifier=Identifier('you'),
+                                 labels=Label('Person'),
+                                 properties=Property('name', 'You'))
+                        ), ),)
+                    )),
                 ])
             ])
-
         ]
 
         TEST_MORE_EDGES = [(

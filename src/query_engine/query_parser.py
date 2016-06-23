@@ -16,7 +16,10 @@ from src.lib import utils
 '''
 Support Notes:
 - Nodes properties may have space between value and key
-- Properties value may be - string, number
+- Properties value may be - string, number, identifier
+-- any string
+-- float or integer
+-- letters_and_numbers. ...
 - Nodes may have more than 1 space between labels and properties
 - Support whitespaces in id/labels  ???
 - Case-sensitive labels and ids  ??
@@ -32,11 +35,26 @@ Support Notes:
 - Parse expression by clause
 
 
-new MatchClause()
+TODO --
+- Set x.y = 10
+- WITH c, SUM(..) AS x
+
+
+TODO -- support for properties
+Variable fields:
+- in node -> (var)
+- Return, With, ...
+- properties
+
+GraphExpressions
+OperatorExpressions
+IdExpressions
+
 '''
-MATCH_NODE = '\((?P<node>.*?)\)'
-MATCH_EDGE = '\[(?P<edge>.*?)\]'
-PARSE_GRAPH_EXPRESSION = re.compile('({})|({})'.format(MATCH_NODE, MATCH_EDGE))
+MATCH_NODE = '\(.*?\)'
+MATCH_EDGE = '<?-?\[.*?\]-?>?'
+PARSE_GRAPH_EXPRESSION = re.compile(
+    '(?P<node>{})|(?P<edge>{})'.format(MATCH_NODE, MATCH_EDGE))
 
 
 # TODO ONE BIG VALIDATION REGEX
@@ -45,16 +63,23 @@ class EdgeDirections(Enum):
     left = 1
     right = 2
 
+
 # TODO flags -> convert to number; find all matches
 # TODO use \w ?? or \S
 IDENTIFIER_REGEX = re.compile('^(\w+)(?:|\s)?')
+VARIABLE_REGEX = re.compile('\w+(\.\w+)*(?:|\s)?')
 
 # Match labels, without matching properties
 LABELS_REGEX = re.compile('[\w:]*?:(\w+)(?:|\s)?')
 
 # TODO allowed_val_chars = '\w|\''
 PROPERTIES_BODY_REGEX = re.compile('{(.*?)}')
-PROPERTY_REGEX = re.compile('(?P<key>\w+):\s*"?(?P<val>[\w|.]+)"?,?\s*')
+KEY = '(?P<key>\w+)'
+VAR = '(?P<var>\w+(\.\w+)*)'
+NUM = '(?P<num>[\d.]+)'
+STR = '("(?P<val>(.+?))")'
+# Matches item sequentianally by their type
+PROPERTY_REGEX = re.compile('{}:\s*({}|{}|{}),?\s*'.format(KEY, NUM, VAR, STR))
 
 BODY_REGEX = '(.*?)'
 EDGE_BODY_REGEX = re.compile('<?-\[{}\]->?'.format(BODY_REGEX))
@@ -149,7 +174,20 @@ def get_properties(raw_elem):
         match = PROPERTY_REGEX.match(raw_props)
         while match:
             key = match.group('key').strip()
-            value = to_number(match.group('val').strip())
+            if match.group('var'):
+                # it's an identifier
+                var = match.group('var').split('.')
+                value = Identifier(name=var[0],
+                                   fields=var[1:])
+            elif match.group('num'):
+                # try to parse it to string
+                value = to_number(match.group('num').strip())
+            elif match.group('val'):
+                # it's just a string
+                value = to_number(match.group('val').strip())
+            else:
+                raise InvalidGraphExpressionPropertiesError(raw_props)
+
             properties.append(Property(key=key, value=value))
 
             match = PROPERTY_REGEX.match(raw_props, match.end())
@@ -185,6 +223,21 @@ def get_labels(raw_elem, multi=True):
         return matches
 
 
+def get_variable(raw_elem):
+    """
+    Args:
+        raw_elem (str):
+    Returns:
+        List[str]
+    """
+    match = VARIABLE_REGEX.match(raw_elem)
+    if match:
+        # separate the properties
+        match = match.group(0).split('.')
+        match = Variable(name=match[0], fields=match[1:])
+    return match
+
+
 def get_identifier(raw_elem):
     """
      ;id {};id:... {}
@@ -193,9 +246,10 @@ def get_identifier(raw_elem):
     Returns:
         Identifier|None:
     """
-    match = IDENTIFIER_REGEX.search(raw_elem)
+    match = VARIABLE_REGEX.match(raw_elem)
     if match:
-        match = Identifier(match.group(1).strip())
+        match = match.group(0).split('.')
+        match = Identifier(name=match[0], fields=match[1:])
     return match
 
 
@@ -288,15 +342,15 @@ def parse_simple_graph_expr(raw_simple_expr):
 
         match = PARSE_GRAPH_EXPRESSION.match(raw_simple_expr)
         while match:
-            if match.group('node') or match.group() == '()':
+            if match.group('node'):
                 raw_nodes.append(match.group('node'))
-            elif match.group('edge') or match.group() == '[]':
+            elif match.group('edge'):
                 raw_edges.append(match.group('edge'))
             else:
                 raise BadGraphExpressionElementError(match.group())
             match = PARSE_GRAPH_EXPRESSION.match(raw_simple_expr, match.end())
 
-        return {'nodes': raw_edges, 'edges': raw_edges}
+        return {'nodes': raw_nodes, 'edges': raw_edges}
 
     raw_elements = collect_elements(raw_simple_expr)
 
@@ -306,15 +360,15 @@ def parse_simple_graph_expr(raw_simple_expr):
     nodes = [parse_node(raw_node) for raw_node in raw_elements['nodes']]
 
     edges = []
+
     # Parse edges
-    nodes_iter = iter(nodes)
-    for raw_edge in raw_elements['nodes']:
-        edges.append(parse_edge(raw_edge, next(nodes_iter), next(nodes_iter)))
-        # TODO populate Edges
+    for raw_edge, edge_nodes in zip(raw_elements['edges'],
+                                    utils.pairwise(nodes)):
+        edges.append(parse_edge(raw_edge, edge_nodes[0], edge_nodes[1]))
 
     res = None
     if edges:
-        res = edges
+        res = tuple(edges)
     elif nodes:
         if len(nodes) > 1:
             raise InvalidGraphExpressionError
@@ -336,8 +390,8 @@ def parse_graph_expression(simple_graph_exprs):
     # split by -
     # parse elements as follows -> node, edge, node edge ...
     # TODO  MOVE TO SPLITTER
-    simple_graph_exprs = [parse_simple_graph_expr(simple_expr)
-                          for simple_expr in simple_graph_exprs]
+    simple_graph_exprs = tuple(parse_simple_graph_expr(simple_expr)
+                               for simple_expr in simple_graph_exprs)
 
     return GraphPatternExpression(simple_graph_exprs)
 
@@ -381,6 +435,8 @@ def parse_expression(expression, expression_type):
         parser = parse_graph_expression
     elif expression_type == OperatorExpression:
         parser = parse_operator_expression
+    elif expression_type == VariableExpression:
+        parser = parse_variable_expression
     else:
         raise UnsupportedExpressionType(expression_type)
 
@@ -454,7 +510,7 @@ class QueryParser:
             # TODO expression type is defined by the clause it refers to -- use that cluase
             subclauses = (parse_clause(clause)
                           for clause in
-                          utils.pairwise((clause, *subclauses_split)))
+                          utils.pairize((clause, *subclauses_split)))
 
             return SubQuery(subclauses)
 
@@ -462,14 +518,14 @@ class QueryParser:
         # Sub queries are defined by specific Clauses
 
         # TODO trailing spaces
-        sub_queries_str =  utils.pairwise(split_list(query, MAIN_CLAUSES))
+        sub_queries_str = utils.pairize(split_list(query, MAIN_CLAUSES))
 
         sub_queries = [parse_sub_query(sub_query) for sub_query in
                        sub_queries_str]
         # TODO parse to Query object ?
 
-        # createSubQueries()
-        # createQueryObject()
+        # TODO - go through the sub_queries and apply matching variables
+        ##apply_variables(sub_queries)
 
         return Query(sub_queries)  # TODO variables ???
 

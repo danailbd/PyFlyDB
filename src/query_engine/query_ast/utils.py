@@ -3,6 +3,11 @@ from src.query_engine.query_ast.clauses import *
 
 # TODO
 def get_expression_type(clause):
+    # TODO type of expression
+    # is variable expression
+    # is some other type of expression ?
+    # is graph expresssion
+    # is Operations expression
     if True:
         return GraphPatternExpression
     else:
