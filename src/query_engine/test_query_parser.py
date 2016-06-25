@@ -2,6 +2,7 @@ from unittest import TestCase
 from src.query_engine.query_parser import *
 
 from src.query_engine.query_ast import *
+from src.query_engine.query_ast.query import *
 from src.query_engine.query_ast.models import *
 from src.query_engine.query_ast.clauses import *
 from src.query_engine.query_ast.expression import *
@@ -363,6 +364,17 @@ class TestQueryParser(TestCase):
 
         # TODO test Expressions with ','hj
 
+    def test_generic_expression(self):
+        self.assertEquals(parse_generic_expression(['a']),
+                          GenericExpression((
+                              Identifier('a')
+                          )))
+        self.assertEquals(parse_generic_expression(['a.b.c']),
+                          GenericExpression((
+                              Identifier(name='a', fields=('b', 'c'))
+                          )))
+        # TODO more cases
+
     def test_operator_expressions(self):
         self.fail()
 
@@ -397,15 +409,16 @@ class TestQueryParser(TestCase):
             'CREATE (you:Person {name:"You"})'
             'RETURN you'
         ),
-            query.Query([
-                query.SubQuery([
+            Query([
+                SubQuery([
                     Create(GraphPatternExpression(
                         (SimpleGraphPatternExpression((
                             Node(identifier=Identifier('you'),
                                  labels=Label('Person'),
                                  properties=Property('name', 'You'))
-                        ), ),)
+                        ),),)
                     )),
+                    Return(GenericExpression((Identifier('you'),)))
                 ])
             ])
         ]

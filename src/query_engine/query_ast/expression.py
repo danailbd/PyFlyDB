@@ -1,12 +1,12 @@
 from src.lib.utils import ensure_tuple
-from src.lib.Printable import Printable
+from src.lib.printable import Printable
 
 
 class Expression(Printable):
-    '''
+    """
     A where (and other elements?) expression handler
     Contains a list of elements - variables, consts and operations
-    '''
+    """
 
     def __init__(self, elements):
         self.elements = ensure_tuple(elements)
@@ -45,3 +45,11 @@ class GraphPatternExpression(Expression):
 class OperatorExpression(Expression):
     def __init__(self, elements):
         Expression.__init__(self, elements)
+
+
+class GenericExpression(Expression):
+    def __init__(self, elements):
+        super().__init__(elements)
+
+
+

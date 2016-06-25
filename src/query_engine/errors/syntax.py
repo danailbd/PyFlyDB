@@ -4,6 +4,12 @@ class InvalidSyntaxError(Exception):
         self.value = value
 
 
+class UnsupportedClauseError(InvalidSyntaxError):
+    def __init__(self, value):
+        """"""
+        self.value = value
+
+
 class UnsupportedExpressionType(InvalidSyntaxError):
     def __init__(self, value):
         """"""

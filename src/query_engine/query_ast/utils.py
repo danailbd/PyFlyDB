@@ -1,19 +1,27 @@
 from src.query_engine.query_ast.expression import *
 from src.query_engine.query_ast.clauses import *
 
-# TODO
-def get_expression_type(clause):
-    # TODO type of expression
-    # is variable expression
-    # is some other type of expression ?
-    # is graph expresssion
-    # is Operations expression
-    if True:
-        return GraphPatternExpression
-    else:
-        return OperatorExpression
+# TODO rename file ...
+
+STR_TO_CLAUSE = {
+    'match': Match,
+    'create': Create,
+    'return': Return,
+    'where': Where
+}
 
 
-# TODO
 def get_clause_type(clause_str):
-    return None
+    """
+    Args:
+        clause_str (str):
+    Returns:
+        Clause|None:
+    """
+    clause = clause_str.lower()
+    clause = STR_TO_CLAUSE.get(clause)
+    if clause:
+        return clause
+    else:
+        raise UnsupportedClauseError(clause_str)
+

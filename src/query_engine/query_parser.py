@@ -92,6 +92,7 @@ def split_list(unsplitted, sep_list):
     """
     Splits a string by list of separators
     """
+    # TODO make it case insensitive
     splitted = re.split('\s*({})\s*'.format('|'.join(sep_list)),
                         unsplitted)
 
@@ -377,6 +378,27 @@ def parse_simple_graph_expr(raw_simple_expr):
     return SimpleGraphPatternExpression(res)
 
 
+#######################################################################
+#                         Expressions parsing                         #
+#######################################################################
+
+def parse_generic_expression(raw_subexprs):
+    """
+    Args:
+        raw_subexprs (List[str]):
+    Returns:
+        GenericExpression:
+    """
+
+    def parse_generic_subexpression(subexpession):
+        # TODO more cases
+        return get_identifier(subexpession)
+
+    generic_subexpressions = \
+        tuple(parse_generic_subexpression(expr) for expr in raw_subexprs)
+    return GenericExpression(generic_subexpressions)
+
+
 def parse_graph_expression(simple_graph_exprs):
     """
      ()-[]-(); (); (), ()-[]-()
@@ -401,20 +423,6 @@ def parse_operator_expression(simple_graph_exprs):
     pass
 
 
-def generate_clause(clause, raw_expr):
-    """
-
-    Args:
-        clause (str):
-        raw_expr (str|List(str)):
-
-    Returns:
-        Clause:
-    """
-    clause = utils.get_clause_type(clause)
-    return clause(raw_expr)
-
-
 def parse_expression(expression, expression_type):
     """
 
@@ -435,8 +443,8 @@ def parse_expression(expression, expression_type):
         parser = parse_graph_expression
     elif expression_type == OperatorExpression:
         parser = parse_operator_expression
-    elif expression_type == VariableExpression:
-        parser = parse_variable_expression
+    elif expression_type == GenericExpression:
+        parser = parse_generic_expression
     else:
         raise UnsupportedExpressionType(expression_type)
 
@@ -454,9 +462,11 @@ def parse_clause(raw_clause):
     """
     clause_str, expr = raw_clause
 
+    clause_type = get_clause_type(clause_str)
+
     expr = parse_expression(expr,
-                            get_expression_type(clause_str))
-    return generate_clause(clause_str, expr)
+                            clause_type.get_expression_type())
+    return clause_type(expr)
 
 
 class QueryParser:

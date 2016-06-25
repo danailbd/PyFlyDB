@@ -1,4 +1,6 @@
-from src.lib.utils import ensure_tuple
+from src.query_engine.errors.syntax import *
+from src.query_engine.query_ast.expression import *
+from src.lib.printable import Printable
 
 """
 Either add some serious logic to items or generate them dynamicaly
@@ -30,34 +32,48 @@ SUB_CLAUSES = [
     'ORDER BY'
 ]
 """
-class Clause:
-    pass
 
 
-class Match(Clause):
+class Clause(Printable):
+    expression_type = None
 
     def __init__(self, expression):
         self.expression = expression
 
+    @classmethod
+    def get_expression_type(cls):
+        return cls.expression_type
+
+
+class Match(Clause):
+    expression_type = GraphPatternExpression
+
+    def __init__(self, expression):
+        super().__init__(expression)
+
 
 class Create(Clause):
+    expression_type = GraphPatternExpression
 
-    def __init__(self, expr):
-        self.expr = expr
+    def __init__(self, expression):
+        super().__init__(expression)
 
 
 class Where(Clause):
+    expression_type = OperatorExpression
 
-    def __init__(self, expr):
-        self.expr = expr
+    def __init__(self, expression):
+        super().__init__(expression)
 
 
 class Return(Clause):
+    expression_type = GenericExpression
 
-    def __init__(self, props=()):
+    def __init__(self, expression, props=()):
+        super().__init__(expression)
         self.props = ensure_tuple(props)
 
-        #raise InvalidArguments('Return needs at least one item')
+        # raise InvalidArguments('Return needs at least one item')
 
 
 MAIN_CLAUSES = [
@@ -85,4 +101,3 @@ SUB_CLAUSES = [
     'DISTINCT',
     'ORDER BY'
 ]
-

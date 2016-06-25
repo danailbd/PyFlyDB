@@ -1,35 +1,28 @@
-class Command:
-
-    """ Defines a basic command for the db (MATCH, WHERE, ...) """
-
-    def __init__(self, clause, expression):
-        """TODO: to be defined1.
-
-        Args:
-            clause (Clause): TODO
-            expression (Expression): TODO
+from src.lib.utils import ensure_tuple
 
 
-        """
-        self._clause = clause
-        self._expression = expression
-        
- 
 class SubQuery:
-
     """Docstring for QueryModel. """
 
     def __init__(self, commands):
-        """TODO: to be defined1.
-
-        Args:
-            commands (List[Command]):
         """
-        self._commands = commands
-               
+        Args:
+            commands (List[Cluase]):
+        """
+        self._clauses = ensure_tuple(commands)
+
+    @property
+    def clauses(self):
+        return self._clauses
+
+    def __repr__(self):
+        return str(self._clauses)
+
+    def __eq__(self, other):
+        return self._clauses == other.clauses
+
 
 class Query:
-
     """Docstring for Query. """
 
     def __init__(self, queries):
@@ -39,5 +32,10 @@ class Query:
         Args:
             queries (List[SubQuery]):
         """
-        self._queries = queries
- 
+        self._queries = ensure_tuple(queries)
+
+    def __repr__(self):
+        return str(self._queries)
+
+    def __eq__(self, other):
+        return self._queries == other._queries
