@@ -1,11 +1,11 @@
 from unittest import TestCase
-from src.query_engine.query_parser import *
+from src.query_processor.query_parser import *
 
-from src.query_engine.query_ast import *
-from src.query_engine.query_ast.query import *
-from src.query_engine.query_ast.models import *
-from src.query_engine.query_ast.clauses import *
-from src.query_engine.query_ast.expression import *
+from src.query_processor.query_ast import *
+from src.query_processor.query_ast.query import *
+from src.query_processor.query_ast.models import *
+from src.query_processor.query_ast.clauses import *
+from src.query_processor.query_ast.expression import *
 
 
 # TODO [0] test string, [1] result object
