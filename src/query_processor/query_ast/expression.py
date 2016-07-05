@@ -1,5 +1,7 @@
 from src.lib.utils import ensure_tuple
+from src.lib.utils import collect_identifiers
 from src.lib.printable import Printable
+from src.query_processor.query_ast.models import *
 
 
 class Expression(Printable):
@@ -22,34 +24,42 @@ class Expression(Printable):
         pass
 
 
-class SimpleGraphPatternExpression(Expression):
+class IdentifierExpression(Expression, IdentifierHolder):
+    def __init__(self, elements, identifiers):
+        """"""
+        super().__init__(elements)
+        self.identifiers = identifiers
+
+    def get_identifiers(self):
+        return self.identifiers
+
+
+class SimpleGraphPatternExpression(IdentifierExpression):
     def __init__(self, expr):
         """
 
         Args:
             expr (List[Node|Edge]):
         """
-        Expression.__init__(self, expr)
+        # collect identifiers
+        super().__init__(expr, collect_identifiers(expr))
 
 
-class GraphPatternExpression(Expression):
-    def __init__(self, simple_exprs):
+class GraphPatternExpression(IdentifierExpression):
+    def __init__(simple_exprs, identifiers):
         """
 
         Args:
             simple_exprs (List[SimpleGraphPatternExpression]):
         """
-        Expression.__init__(self, simple_exprs)
+        super().__init__(simple_exprs, collect_identifiers(simple_exprs))
 
 
 class OperatorExpression(Expression):
     def __init__(self, elements):
-        Expression.__init__(self, elements)
-
-
-class GenericExpression(Expression):
-    def __init__(self, elements):
         super().__init__(elements)
 
 
-
+class GenericExpression(IdentifierExpression):
+    def __init__(self, elements):
+        super().__init__(elements, collect_identifiers(elements))

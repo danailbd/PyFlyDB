@@ -1,5 +1,5 @@
-from src.query_engine.errors.syntax import *
-from src.query_engine.query_ast.expression import *
+from src.query_processor.query_ast.expression import *
+from src.query_processor.query_ast.models import *
 from src.lib.printable import Printable
 
 """
@@ -33,12 +33,24 @@ SUB_CLAUSES = [
 ]
 """
 
+# TODO more heiracal Clauses
 
-class Clause(Printable):
+class Clause(Printable, IdentifierHolder):
     expression_type = None
 
     def __init__(self, expression):
+        """
+
+        Args:
+            expression (Expression):
+        """
         self.expression = expression
+
+    def get_identifiers(self):
+        if isinstance(self.expression, IdentifierExpression):
+            return self.expression.get_identifiers()
+        else:
+            return ()
 
     @classmethod
     def get_expression_type(cls):

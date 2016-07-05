@@ -3,14 +3,14 @@ from enum import Enum
 
 import logging as Logger
 
-from src.query_engine.errors.syntax import *
+from src.query_processor.errors.syntax import *
 
-from src.query_engine.query_ast.operators import *
-from src.query_engine.query_ast.query import *
-from src.query_engine.query_ast.models import *
-from src.query_engine.query_ast.clauses import *
-from src.query_engine.query_ast.expression import *
-from src.query_engine.query_ast.utils import *
+from src.query_processor.query_ast.operators import *
+from src.query_processor.query_ast.query import *
+from src.query_processor.query_ast.models import *
+from src.query_processor.query_ast.clauses import *
+from src.query_processor.query_ast.expression import *
+from src.query_processor.query_ast.utils import *
 from src.lib import utils
 
 '''
@@ -355,7 +355,7 @@ def parse_simple_graph_expr(raw_simple_expr):
 
     raw_elements = collect_elements(raw_simple_expr)
 
-    # TODO check number of nodes
+    # TODO check number of nodeshttps://gist.github.com/mkaz/141394d9ee97bed99121
 
     # Parse nodes
     nodes = [parse_node(raw_node) for raw_node in raw_elements['nodes']]
@@ -377,6 +377,9 @@ def parse_simple_graph_expr(raw_simple_expr):
 
     return SimpleGraphPatternExpression(res)
 
+def optimize_identifiers(expr):
+    """Reuse same identifier objects for different elements."""
+    return expr
 
 #######################################################################
 #                         Expressions parsing                         #
@@ -447,6 +450,8 @@ def parse_expression(expression, expression_type):
         parser = parse_generic_expression
     else:
         raise UnsupportedExpressionType(expression_type)
+
+    expression = optimize_identifiers(expression)
 
     return parser(expression)
 

@@ -1,9 +1,11 @@
 from src.lib.utils import ensure_tuple
+from src.lib.printable import Printable
+from src.lib.utils import collect_identifiers
 
 
-class Printable:
-    def __repr__(self):
-        return "<" + type(self).__name__ + "> " + str(self.__dict__)
+class IdentifierHolder:
+    def get_identifiers(self):
+        raise NotImplementedError()
 
 
 class Literal:
@@ -60,7 +62,7 @@ class Identifier:
         return self._value
 
     def __str__(self):
-        return self._name + '.' + '.'.join(self._fields) + ' ' +\
+        return self._name + '.' + '.'.join(self._fields) + ' ' + \
                str(self._value)
 
     def __repr__(self):
@@ -69,9 +71,14 @@ class Identifier:
     def __eq__(self, other):
         return self.__dict__ == other.__dict__
 
+    def __hash__(self):
+        # XXX it's a quick fix -- __hash__ must be compatible with __eq__
+        return id(self)
+
 
 class Variable(Identifier):
     """Keeps data about referenced identifiers."""
+
     def __init__(self, name, fields):
         """
         Args:
@@ -94,7 +101,7 @@ class Label:
         return self.__dict__ == other.__dict__
 
 
-class Edge(Printable):
+class Edge(Printable, IdentifierHolder):
     """
     TODO: make it immutable
     An edge:
@@ -127,7 +134,7 @@ class Edge(Printable):
     def __repr__(self):
         return '<Edge>[' + str(self.identifier) + ':' + \
                str(self.__label) + ' { ' + str(self.__properties) + ' } < ' + \
-               str(self.__node_in) + ' > < ' + str(self.__node_out) + ' > - ' +  \
+               str(self.__node_in) + ' > < ' + str(self.__node_out) + ' > - ' + \
                str(self.__directed) + ']'
 
     def __eq__(self, other):
@@ -141,6 +148,16 @@ class Edge(Printable):
         Get a directed node pair out - in (direction flag needed)
         """
         return (self.__node_in, self.__node_out)
+
+    def get_identifiers(self):
+        ids = []
+        if self.identifier:
+            ids.append(self.identifier)
+        if self.__node_in and self.__node_in.get_identifiers():
+            ids.append(*self.__node_in.get_identifiers())
+        if self.__node_out and self.__node_in.get_identifiers():
+            ids.append(*self.__node_out.get_identifiers())
+        return ids
 
     @property
     def label(self):
@@ -165,7 +182,7 @@ class ReturnEdge(Edge):
         # TODO implement setters
 
 
-class Node(Printable):
+class Node(Printable, IdentifierHolder):
     """
     TODO: make it immutable
     A node:
@@ -178,6 +195,9 @@ class Node(Printable):
         self.identifier = identifier
         self.properties = ensure_tuple(properties)
         self.labels = ensure_tuple(labels)
+
+    def get_identifiers(self):
+        return [self.identifier] if self.identifier else []
 
     def __eq__(self, other):
         return self.__dict__ == other.__dict__

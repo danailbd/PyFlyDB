@@ -1,5 +1,6 @@
 import collections
 from itertools import tee
+from src.query_processor.models import *
 
 
 def ensure_tuple(value):
@@ -26,3 +27,13 @@ def pairwise(iterable):
     a, b = tee(iterable)
     next(b, None)
     return zip(a, b)
+
+
+def collect_identifiers(elems):
+    identifiers = set()
+    for elem in elems:
+        if isinstance(elem, Identifier):
+            identifiers.add(elem)
+        elif hasattr(elem, 'get_identifiers'):
+            identifiers.update(elem.get_identifiers())
+    return identifiers
