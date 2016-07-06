@@ -70,7 +70,7 @@ IDENTIFIER_REGEX = re.compile('^(\w+)(?:|\s)?')
 VARIABLE_REGEX = re.compile('\w+(\.\w+)*(?:|\s)?')
 
 # Match labels, without matching properties
-LABELS_REGEX = re.compile('[\w:]*?:(\w+)(?:|\s)?')
+LABELS_REGEX = re.compile('[\w:]*?:([\w_]+)(?:|\s)?')
 
 # TODO allowed_val_chars = '\w|\''
 PROPERTIES_BODY_REGEX = re.compile('{(.*?)}')
