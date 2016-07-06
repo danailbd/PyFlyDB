@@ -1,5 +1,6 @@
 from src.query_processor.query_ast.expression import *
 from src.query_processor.query_ast.clauses import *
+from src.query_processor.errors.syntax import UnsupportedClauseError
 
 # TODO rename file ...
 

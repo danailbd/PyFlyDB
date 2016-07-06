@@ -1,17 +1,17 @@
 from unittest import TestCase
-from src.query_processor.query_parser import *
 
-from src.query_processor.query_ast import *
-from src.query_processor.query_ast.query import *
 from src.query_processor.query_ast.models import *
 from src.query_processor.query_ast.clauses import *
 from src.query_processor.query_ast.expression import *
+from src.query_processor.query_ast.query import *
+from src.query_processor.query_parser import *
 
 
 # TODO [0] test string, [1] result object
 
-
 class TestQueryParser(TestCase):
+    # TODO test identifier - should return same object
+
     def test_parse_graph_expression(self):
         # test with ,
         # test with 1 node
@@ -277,6 +277,7 @@ class TestQueryParser(TestCase):
 
         self.assertEquals(split_list('Aa Baa aA baab', ['aa']),
                           ['aa', 'Baa', 'aa', 'baab'])
+        # TODO substrings
 
     def test_parse_id_expression(self):
         self.fail()
@@ -311,8 +312,8 @@ class TestQueryParser(TestCase):
             'CREATE (anna)-[:FRIEND]->(:Person:Expert '
             '{name:"Amanda"})-[:WORKED_WITH]->(neo);'
         ),
-            query.Query([
-                query.SubQuery([
+            Query([
+                SubQuery([
                     Match(GraphPatternExpression([SimpleGraphPatternExpression(
                         [Node(labels=Label('Database'),
                               identifier=Identifier(
@@ -321,7 +322,7 @@ class TestQueryParser(TestCase):
                                   Property('name',
                                            'Neo4j')])])])),
                 ]),
-                query.SubQuery([
+                SubQuery([
                     Match(GraphPatternExpression([Node(labels=Label('Person'),
                                                        identifier=Identifier(
                                                            'anna'),
@@ -329,7 +330,7 @@ class TestQueryParser(TestCase):
                                                            Property('name',
                                                                     'Anna')])])),
                 ]),
-                query.SubQuery([
+                SubQuery([
                     Create(GraphPatternExpression([Edge(label='FRIEND',
                                                         directed=True,
                                                         node_in=Node(
@@ -383,8 +384,8 @@ class TestQueryParser(TestCase):
             'MATCH (you {name:"You"})-[:FRIEND]->(yourFriends)'
             'RETURN you, yourFriends'
         ),
-            query.Query([
-                query.SubQuery([
+            Query([
+                SubQuery([
                     Match(GraphPatternExpression([Edge(label='FRIEND',
                                                        directed=True,
                                                        node_in=
@@ -428,8 +429,8 @@ class TestQueryParser(TestCase):
             'RETURN user.name'
         ),
             (
-                query.Query([
-                    query.SubQuery([Match(
+                Query([
+                    SubQuery([Match(
                         GraphPatternExpression([Edge(label='PURCHASED',
                                                      directed=True,
                                                      node_in=Node(
@@ -463,6 +464,62 @@ class TestQueryParser(TestCase):
                          SIMPLE_TEST_MATCH_EDGE[1])
         self.assertEqual(self.parser.parse_query(TEST_MORE_EDGES[0]),
                          TEST_MORE_EDGES[1])
+
+    def test_query_utils(self):
+        idAnna1 = Identifier('anna')
+        idAnna2 = Identifier('anna')
+        idNeo1 = Identifier('neo')
+        idNeo2 = Identifier('neo')
+        query = Query([
+            SubQuery([
+                Match(GraphPatternExpression([SimpleGraphPatternExpression(
+                    [Node(labels=Label('Database'),
+                          identifier=idNeo2,
+                          properties=[
+                              Property('name',
+                                       'Neo4j')])])])),
+            ]),
+            SubQuery([
+                Match(GraphPatternExpression([Node(labels=Label('Person'),
+                                                   identifier=idAnna1,
+                                                   properties=[
+                                                       Property('name',
+                                                                'Anna')])])),
+            ]),
+            SubQuery([
+                Create(GraphPatternExpression([Edge(label='FRIEND',
+                                                    directed=True,
+                                                    node_in=Node(
+                                                        identifier=idAnna2),
+                                                    node_out=Node(
+                                                        labels=(
+                                                            Label('Person'),
+                                                            Label(
+                                                                'Expert')),
+                                                        properties=
+                                                        Property('name',
+                                                                 'Amanda'))),
+                                               Edge(label='WORKED_WITH',
+                                                    directed=True,
+                                                    node_out=Node(
+                                                        identifier=idNeo1),
+                                                    node_in=Node(
+                                                        labels=(
+                                                            Label('Person'),
+                                                            Label(
+                                                                'Expert')),
+                                                        properties=
+                                                        Property('name',
+                                                                 'Amanda')))]))
+            ])
+        ])
+
+        self.assertEquals(Query.get_identifiers_map(query.sub_queries),
+                          {
+                              'anna': {idAnna1, idAnna2},
+                              'neo': {idNeo1, idNeo2}
+                          })
+
 
     def test_exceptions(self):
         self.fail()
