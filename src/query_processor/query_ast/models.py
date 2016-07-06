@@ -1,6 +1,13 @@
-from src.lib.utils import ensure_tuple
 from src.lib.printable import Printable
-from src.lib.utils import collect_identifiers
+from src.lib.utils import ensure_tuple
+
+
+class PropertiesHolder:
+    def properties_as_dict(self):
+        props = {}
+        for prop in self.properties:
+            props[prop.key] = prop.value
+        return props
 
 
 class IdentifierHolder:
@@ -61,6 +68,10 @@ class Identifier:
     def value(self):
         return self._value
 
+    @property
+    def name(self):
+        return self._name
+
     def __str__(self):
         return self._name + '.' + '.'.join(self._fields) + ' ' + \
                str(self._value)
@@ -76,17 +87,17 @@ class Identifier:
         return id(self)
 
 
-class Variable(Identifier):
+class Variable:
     """Keeps data about referenced identifiers."""
 
-    def __init__(self, name, fields):
+    def __init__(self, identifier, fields):
         """
         Args:
             name (str):
             fields (List[str]): represents the variable properties
             sequence -> a.b.c -> [b, c]
         """
-        Identifier.__init__(self, name)
+        self.id = identifier
         self.fields = ensure_tuple(fields)
 
 
@@ -101,7 +112,7 @@ class Label:
         return self.__dict__ == other.__dict__
 
 
-class Edge(Printable, IdentifierHolder):
+class Edge(Printable, IdentifierHolder, PropertiesHolder):
     """
     TODO: make it immutable
     An edge:
@@ -121,7 +132,7 @@ class Edge(Printable, IdentifierHolder):
             node_in (Node):
             node_out (Node):
             directed (bool|str): left or right directed
-            identifier (Identifier|Variable):
+            variable (Identifier|Variable):
             properties:
         """
         self.__label = label
@@ -155,7 +166,7 @@ class Edge(Printable, IdentifierHolder):
             ids.append(self.identifier)
         if self.__node_in and self.__node_in.get_identifiers():
             ids.append(*self.__node_in.get_identifiers())
-        if self.__node_out and self.__node_in.get_identifiers():
+        if self.__node_out and self.__node_out.get_identifiers():
             ids.append(*self.__node_out.get_identifiers())
         return ids
 
@@ -174,7 +185,7 @@ class ReturnEdge(Edge):
     it shouldn't be returned.
     """
 
-    def __init__(self, direction, label, nodeLeft, nodeRight, _id, identifier,
+    def __init__(self, direction, label, nodeLeft, nodeRight, _id, variable,
                  properties):
         Edge.__init__(self, label, properties)
         self.__id = _id
@@ -182,7 +193,7 @@ class ReturnEdge(Edge):
         # TODO implement setters
 
 
-class Node(Printable, IdentifierHolder):
+class Node(Printable, IdentifierHolder, PropertiesHolder):
     """
     TODO: make it immutable
     A node:
@@ -204,6 +215,6 @@ class Node(Printable, IdentifierHolder):
 
 
 class ReturnNode(Node):
-    def __init__(self, identifier, _id, properties, labels=[]):
-        Node.__init__(self, identifier, properties, labels)
+    def __init__(self, variable, _id, properties, labels=[]):
+        Node.__init__(self, variable, properties, labels)
         self.__id = _id

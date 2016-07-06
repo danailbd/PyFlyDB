@@ -223,6 +223,31 @@ def get_labels(raw_elem, multi=True):
     else:
         return matches
 
+# ## TODO ONLY ONE INSTANCE
+# def get_identifier_by_name(name):
+#             """Keep only one identifier instance by name."""
+#             identifier = identifiers.get(name)
+#             if not identifier:
+#                 identifier = Identifier(name=name)
+#                 # add to existing
+#                 identifiers[name] = identifier
+#             return identifier
+#
+#         def get_variable(raw_elem):
+#             """
+#              ;id {};id:... {}
+#             Args:
+#                 raw_node (str):
+#             Returns:
+#                 Variable|None:
+#             """
+#             match = VARIABLE_REGEX.match(raw_elem)
+#             if match:
+#                 match = match.group(0).split('.')
+#                 id = get_identifier_by_name(match[0])
+#                 fields = match[1:]
+#                 match = Variable(identifier=id, fields=fields )
+#             return match
 
 def get_variable(raw_elem):
     """

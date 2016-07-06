@@ -1,6 +1,6 @@
 import collections
 from itertools import tee
-from src.query_processor.models import *
+from src.query_processor.query_ast import models
 
 
 def ensure_tuple(value):
@@ -32,7 +32,7 @@ def pairwise(iterable):
 def collect_identifiers(elems):
     identifiers = set()
     for elem in elems:
-        if isinstance(elem, Identifier):
+        if isinstance(elem, models.Identifier):
             identifiers.add(elem)
         elif hasattr(elem, 'get_identifiers'):
             identifiers.update(elem.get_identifiers())

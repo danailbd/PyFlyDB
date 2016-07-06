@@ -54,7 +54,7 @@ class Query:
         """
         name_to_identifiers = {}
         # collect identifiers lists from the subqueries
-        identifiers = [sub_query.collect_identifiers() for
+        identifiers = [sub_query.get_identifiers() for
                        sub_query in
                        sub_queries]
         identifiers = set().union(*identifiers)
@@ -69,7 +69,7 @@ class Query:
         return name_to_identifiers
 
     @property
-    def queries(self):
+    def sub_queries(self):
         return self._queries
 
     def __repr__(self):

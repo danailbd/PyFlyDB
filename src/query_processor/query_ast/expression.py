@@ -46,7 +46,7 @@ class SimpleGraphPatternExpression(IdentifierExpression):
 
 
 class GraphPatternExpression(IdentifierExpression):
-    def __init__(simple_exprs, identifiers):
+    def __init__(self, simple_exprs):
         """
 
         Args:
