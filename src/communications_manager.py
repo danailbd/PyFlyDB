@@ -10,8 +10,6 @@ from threading import Thread
 # Parallel request processing
 ###
 
-QUERY_END_SYMBOL = ';'
-UTF8 = 'utf-8'
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 Logger = logging.getLogger('Communications')
@@ -19,8 +17,10 @@ Logger = logging.getLogger('Communications')
 HOST = ''  # Symbolic name meaning all available interfaces (lo, eth0, ...)
 PORT = 50003  # Arbitrary non-privileged port
 MAX_CONNECTIONS = 2
+QUERY_END_SYMBOL = ';'
+UTF8 = 'utf-8'
 
-connection_trds = []
+
 
 def is_request_end(data):
     return data.strip()[-1] == QUERY_END_SYMBOL
@@ -29,7 +29,9 @@ def is_request_end(data):
 class SocketCommunicationsManager:
     def __init__(self, query_processor):
         self.processor = query_processor
+        self.connection_trds = []
 
+    # TODO rename
     def run(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
@@ -41,11 +43,11 @@ class SocketCommunicationsManager:
 
                 t = Thread(target=self.connection_worker, args=(conn, addr))
                 t.start()
-                connection_trds.append(t)
+                self.connection_trds.append(t)
             # TODO send signals to threads upon close
 
             # TODO is this needed ?
-            for t in connection_trds:
+            for t in self.connection_trds:
                 t.join()
 
     def connection_worker(self, conn, addr):
