@@ -93,7 +93,7 @@ def split_list(unsplitted, sep_list):
     Splits a string by list of separators
     """
     # TODO make it case insensitive
-    splitted = re.split('\s*({})\s*'.format('|'.join(sep_list)),
+    splitted = re.split('\s*({})\s+'.format('|'.join(sep_list)),
                         unsplitted)
 
     if len(splitted) > 0 and not splitted[0]:
