@@ -1,5 +1,6 @@
 import logging
 import socket
+import sys
 from threading import Thread
 
 # TODO proper SIGUP handling (close connections ?)
@@ -10,8 +11,12 @@ from threading import Thread
 # Parallel request processing
 ###
 
+logging.basicConfig(
+    level=logging.NOTSET,
+    format='%(threadName)10s %(name)18s: %(message)s',
+    stream=sys.stderr
+)
 
-logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 Logger = logging.getLogger('Communications')
 
 HOST = ''  # Symbolic name meaning all available interfaces (lo, eth0, ...)
@@ -55,7 +60,7 @@ class SocketCommunicationsManager:
 
         def process_request(query):
             Logger.debug('Processing request: %s', query)
-            result = self.processor.process(query)
+            result = self.processor.process(query[:-1])
 
             print('Sending result ...')
             conn.sendall(bytearray(result, encoding=UTF8))
@@ -63,21 +68,32 @@ class SocketCommunicationsManager:
         Logger.info('Connections established: %s', conn)
         with conn:
             Logger.info('Connected by %s', addr)
-            query = []
+            query_builder = []
             while True:
                 data = str(conn.recv(1024), encoding=UTF8)
                 if not data:
                     # on connection close
                     break
-                query.append(data)
+                query_builder.append(data)
                 Logger.debug('Data: %s', data)
                 # check and run
                 # executor
                 if is_request_end(data):
-                    process_request(''.join(query))
+                    process_request(''.join(query_builder))
 
             Logger.info('Connection closed %s', addr)
 
     # TODO what to do on connection close ?
     def close_connection(self):
         pass
+
+
+# XXX testing
+class DummyRepeaterProcessor:
+    def process(self, query):
+        Logger.debug(query)
+        return query
+
+
+if __name__ == '__main__':
+    SocketCommunicationsManager(DummyRepeaterProcessor()).run()
