@@ -34,6 +34,9 @@ SUB_CLAUSES = [
 """
 
 # TODO more heiracal Clauses
+# - clause possible possitions (after, before, only in the end)
+# ...
+
 
 class Clause(Printable, IdentifierHolder):
     expression_type = None

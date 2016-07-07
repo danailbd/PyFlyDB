@@ -36,11 +36,13 @@ Support Notes:
 
 
 TODO --
+- RETURN - only in the end
 - Set x.y = 10
 - WITH c, SUM(..) AS x
+- x = (:A)-[]-(:B)  -- pattern variables http://neo4j.com/docs/developer-manual/current/#_pattern_variables
 
 
-TODO -- support for properties
+-- support for properties
 Variable fields:
 - in node -> (var)
 - Return, With, ...
