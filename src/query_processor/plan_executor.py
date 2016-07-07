@@ -1,5 +1,4 @@
 
-
 class PlanExecutor:
 
     def __init__(self, storage_manager, execution_scheduler):
@@ -12,13 +11,13 @@ class PlanExecutor:
         '''Return, sort, ...'''
         pass
 
-    async def execute(query, *args):
+    def execute(self, query_plan, *args):
         # TODO
         """
         Registers operation to the scheduler and waits for it's
             result
         Args:
-            query (Query):
+            query_plan (QueryPlan):
             *args:
 
         Returns:
@@ -48,24 +47,15 @@ class PlanExecutor:
                     update_identifier_data(query, key, value)
                     query.get_identifiers_map()
 
+        # TODO execute atomically  ??
+        for operation in query_plan.operations:
+            future = self.scheduler.submit(operation)
 
+            # on future ready:
+            # - populate results
+            # - execute next
+            # -- rework operation (as op may be split)
+            result = future.result()
+            populate_post_queries()
 
-
-        async def execute_sub_query(sub_query):
-            """
-            Args:
-                sub_query:
-
-            Returns:
-                dict: Identifier -> List[Node|Edge|...]
-            """
-            return {}
-
-        sub_queries = query.queries
-        cur_query = query.queries[0]
-        for idx in range(1, len(sub_queries)):
-            results = await execute_sub_query(cur_query)
-            # populate following queries (as they might share an identifier)
-            populate_post_queries(sub_queries[idx:], results)
-            cur_query = sub_queries[idx]
 

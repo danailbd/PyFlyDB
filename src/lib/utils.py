@@ -31,6 +31,7 @@ def pairwise(iterable):
 
 def collect_identifiers(elems):
     identifiers = set()
+    elems = ensure_tuple(elems)
     for elem in elems:
         if isinstance(elem, models.Identifier):
             identifiers.add(elem)

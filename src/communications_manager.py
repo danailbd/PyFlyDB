@@ -26,13 +26,19 @@ QUERY_END_SYMBOL = ';'
 UTF8 = 'utf-8'
 
 
+# XXX testing
+class DummyRepeaterProcessor:
+    def process(self, query):
+        Logger.debug(query)
+        return query
+
 
 def is_request_end(data):
     return data.strip()[-1] == QUERY_END_SYMBOL
 
 
 class SocketCommunicationsManager:
-    def __init__(self, query_processor):
+    def __init__(self, query_processor=DummyRepeaterProcessor):
         self.processor = query_processor
         self.connection_trds = []
 
@@ -86,13 +92,6 @@ class SocketCommunicationsManager:
     # TODO what to do on connection close ?
     def close_connection(self):
         pass
-
-
-# XXX testing
-class DummyRepeaterProcessor:
-    def process(self, query):
-        Logger.debug(query)
-        return query
 
 
 if __name__ == '__main__':
