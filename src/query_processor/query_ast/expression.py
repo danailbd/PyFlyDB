@@ -24,7 +24,7 @@ class Expression(Printable):
         pass
 
 
-class IdentifierExpression(Expression, IdentifierHolder):
+class IdentifierExpression(Expression, IdentifierHolderMixin):
     def __init__(self, elements, identifiers):
         """"""
         super().__init__(elements)

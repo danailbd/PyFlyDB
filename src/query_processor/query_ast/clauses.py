@@ -38,7 +38,7 @@ SUB_CLAUSES = [
 # ...
 
 
-class Clause(Printable, IdentifierHolder):
+class Clause(Printable, IdentifierHolderMixin):
     expression_type = None
 
     def __init__(self, expression):

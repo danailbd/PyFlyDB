@@ -1,19 +1,15 @@
 class InvalidSyntaxError(Exception):
     def __init__(self, value):
-        """"""
+        """Base syntax error."""
         self.value = value
 
 
 class UnsupportedClauseError(InvalidSyntaxError):
-    def __init__(self, value):
-        """"""
-        self.value = value
+    pass
 
 
 class UnsupportedExpressionType(InvalidSyntaxError):
-    def __init__(self, value):
-        """"""
-        InvalidSyntaxError.__init__(self, value)
+    pass
 
 
 class NumberOfOperandsError(InvalidSyntaxError):
@@ -25,18 +21,15 @@ class InvalidOperationError(InvalidSyntaxError):
 
 
 class InvalidExpressionError(InvalidSyntaxError):
-    def __init__(self, value):
-        InvalidSyntaxError.__init__(self, value)
+    pass
 
 
 class InvalidGraphExpressionError(InvalidExpressionError):
-    def __init__(self, value):
-        InvalidExpressionError.__init__(self, value)
+    pass
 
 
 class BadGraphExpressionElementError(InvalidGraphExpressionError):
-    def __init__(self, value):
-        self.value = value
+    pass
 
 
 class InvalidNodeError(InvalidGraphExpressionError):
@@ -46,8 +39,7 @@ class InvalidNodeError(InvalidGraphExpressionError):
 
 
 class EmptyGraphPatternExpressionError(InvalidGraphExpressionError):
-    def __init__(self, value):
-        self.value = value
+    pass
 
 
 class InvalidGraphExpressionPropertiesError(InvalidGraphExpressionError):
@@ -69,10 +61,8 @@ class InvalidEdgeLabelError(InvalidEdgeError):
 
 
 class InvalidLabelsCountError(InvalidGraphExpressionError):
-    def __init__(self):
-        pass
+    pass
 
 
 class InvalidOperatorExpression(InvalidExpressionError):
-    def __init__(self, value):
-        InvalidExpressionError.__init__(self, value)
+    pass

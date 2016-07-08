@@ -2,7 +2,7 @@ from src.lib.printable import Printable
 from src.lib.utils import ensure_tuple
 
 
-class PropertiesHolder:
+class PropertiesHolderMixin:
     def properties_as_dict(self):
         props = {}
         for prop in self.properties:
@@ -10,7 +10,7 @@ class PropertiesHolder:
         return props
 
 
-class IdentifierHolder:
+class IdentifierHolderMixin:
     def get_identifiers(self):
         raise NotImplementedError()
 
@@ -112,7 +112,7 @@ class Label:
         return self.__dict__ == other.__dict__
 
 
-class Edge(Printable, IdentifierHolder, PropertiesHolder):
+class Edge(Printable, IdentifierHolderMixin, PropertiesHolderMixin):
     """
     TODO: make it immutable
     An edge:
@@ -193,7 +193,7 @@ class ReturnEdge(Edge):
         # TODO implement setters
 
 
-class Node(Printable, IdentifierHolder, PropertiesHolder):
+class Node(Printable, IdentifierHolderMixin, PropertiesHolderMixin):
     """
     TODO: make it immutable
     A node:
