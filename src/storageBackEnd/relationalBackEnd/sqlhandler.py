@@ -1,2 +1,0 @@
-class SqlHandler():
-    pass
