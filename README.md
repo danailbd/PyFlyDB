@@ -1,4 +1,4 @@
 # PyFlyDB
  
-PyFlyDB is a python a graph database that implements [cypher](http://www.opencypher.org/) query language
+PyFlyDB is a python native graph database that implements [cypher](http://www.opencypher.org/) query language.
 
