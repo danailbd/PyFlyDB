@@ -24,14 +24,14 @@ class StorageManager:
     def get_neighbouring_nodes(**kwargs):
         """
         Args:
-            node (Node): used to filter of Vertice 
-            relationships (List<Edge>): types of *relationships* used to filter out neighbours 
+            node (Node): used to filter of Vertice
+            relationships (List<Edge>): types of *relationships* used
+                                        to filter out neighbours
             properties (Dict): used to filter out neighbours
             labels (List<String>): used to filter out neighbours
         Returns:
             list(Node): returns a list of neighbouring nodes
         """
-
 
     def get_nodes(**kwargs):
         """
