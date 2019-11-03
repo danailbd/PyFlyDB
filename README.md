@@ -29,4 +29,3 @@ pattern filtering vs WHERE syntax
 2 начина на съхранение
 
 оптимизации 
-
