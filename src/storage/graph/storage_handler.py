@@ -1,0 +1,3 @@
+
+class StorageHandler:
+    pass
